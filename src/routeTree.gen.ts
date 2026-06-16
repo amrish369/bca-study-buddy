@@ -9,11 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as PapersRouteImport } from './routes/papers'
 import { Route as CoursesRouteImport } from './routes/courses'
+import { Route as AssignmentsRouteImport } from './routes/assignments'
 import { Route as AnalysisRouteImport } from './routes/analysis'
 import { Route as IndexRouteImport } from './routes/index'
 
+const UpdatesRoute = UpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PapersRoute = PapersRouteImport.update({
   id: '/papers',
   path: '/papers',
@@ -22,6 +29,11 @@ const PapersRoute = PapersRouteImport.update({
 const CoursesRoute = CoursesRouteImport.update({
   id: '/courses',
   path: '/courses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssignmentsRoute = AssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalysisRoute = AnalysisRouteImport.update({
@@ -38,39 +50,67 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
+  '/assignments': typeof AssignmentsRoute
   '/courses': typeof CoursesRoute
   '/papers': typeof PapersRoute
+  '/updates': typeof UpdatesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
+  '/assignments': typeof AssignmentsRoute
   '/courses': typeof CoursesRoute
   '/papers': typeof PapersRoute
+  '/updates': typeof UpdatesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
+  '/assignments': typeof AssignmentsRoute
   '/courses': typeof CoursesRoute
   '/papers': typeof PapersRoute
+  '/updates': typeof UpdatesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analysis' | '/courses' | '/papers'
+  fullPaths:
+    | '/'
+    | '/analysis'
+    | '/assignments'
+    | '/courses'
+    | '/papers'
+    | '/updates'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analysis' | '/courses' | '/papers'
-  id: '__root__' | '/' | '/analysis' | '/courses' | '/papers'
+  to: '/' | '/analysis' | '/assignments' | '/courses' | '/papers' | '/updates'
+  id:
+    | '__root__'
+    | '/'
+    | '/analysis'
+    | '/assignments'
+    | '/courses'
+    | '/papers'
+    | '/updates'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalysisRoute: typeof AnalysisRoute
+  AssignmentsRoute: typeof AssignmentsRoute
   CoursesRoute: typeof CoursesRoute
   PapersRoute: typeof PapersRoute
+  UpdatesRoute: typeof UpdatesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/updates': {
+      id: '/updates'
+      path: '/updates'
+      fullPath: '/updates'
+      preLoaderRoute: typeof UpdatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/papers': {
       id: '/papers'
       path: '/papers'
@@ -83,6 +123,13 @@ declare module '@tanstack/react-router' {
       path: '/courses'
       fullPath: '/courses'
       preLoaderRoute: typeof CoursesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assignments': {
+      id: '/assignments'
+      path: '/assignments'
+      fullPath: '/assignments'
+      preLoaderRoute: typeof AssignmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analysis': {
@@ -105,8 +152,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalysisRoute: AnalysisRoute,
+  AssignmentsRoute: AssignmentsRoute,
   CoursesRoute: CoursesRoute,
   PapersRoute: PapersRoute,
+  UpdatesRoute: UpdatesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
