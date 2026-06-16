@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UpdatesRouteImport } from './routes/updates'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PapersRouteImport } from './routes/papers'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CoursesRouteImport } from './routes/courses'
@@ -20,6 +21,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const UpdatesRoute = UpdatesRouteImport.update({
   id: '/updates',
   path: '/updates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PapersRoute = PapersRouteImport.update({
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/papers': typeof PapersRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/updates': typeof UpdatesRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/papers': typeof PapersRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/updates': typeof UpdatesRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/papers': typeof PapersRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/updates': typeof UpdatesRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/dashboard'
     | '/papers'
+    | '/sitemap.xml'
     | '/updates'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/dashboard'
     | '/papers'
+    | '/sitemap.xml'
     | '/updates'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/dashboard'
     | '/papers'
+    | '/sitemap.xml'
     | '/updates'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   CoursesRoute: typeof CoursesRoute
   DashboardRoute: typeof DashboardRoute
   PapersRoute: typeof PapersRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UpdatesRoute: typeof UpdatesRoute
 }
 
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/updates'
       fullPath: '/updates'
       preLoaderRoute: typeof UpdatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/papers': {
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoursesRoute: CoursesRoute,
   DashboardRoute: DashboardRoute,
   PapersRoute: PapersRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   UpdatesRoute: UpdatesRoute,
 }
 export const routeTree = rootRouteImport
