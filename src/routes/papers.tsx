@@ -94,24 +94,16 @@ function PapersPage() {
 
                 <div className="mt-4 space-y-2">
                   {list.slice(0, 4).map((p) => (
-                    <div
+                    <PaperRow
                       key={p.year + p.session}
-                      className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2"
-                    >
-                      <span className="text-sm font-medium">{p.session} {p.year}</span>
-                      <div className="flex items-center gap-2">
-                        {p.hasSolution && (
-                          <Badge className="bg-success/15 text-success hover:bg-success/15">
-                            <FileCheck2 className="mr-1 h-3 w-3" /> Solved
-                          </Badge>
-                        )}
-                        <Button size="sm" variant="outline" className="h-8">
-                          <Download className="mr-1 h-3.5 w-3.5" /> PDF
-                        </Button>
-                      </div>
-                    </div>
+                      courseCode={s.courseCode}
+                      year={p.year}
+                      session={p.session}
+                      hasSolution={p.hasSolution}
+                    />
                   ))}
                 </div>
+
               </div>
             );
           })}
