@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { FileText, FileCheck2, Search, Download } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { FileText, FileCheck2, Search, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { SiteLayout } from "@/components/layout/SiteLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { semesters, subjectsBySemester, papersForCourse } from "@/lib/data";
+import { getPaperUrl } from "@/lib/papers.functions";
+
 
 export const Route = createFileRoute("/papers")({
   head: () => ({
