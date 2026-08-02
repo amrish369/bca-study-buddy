@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { FileText, FileCheck2, Search, Download } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { FileText, FileCheck2, Search, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { SiteLayout } from "@/components/layout/SiteLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { semesters, subjectsBySemester, papersForCourse } from "@/lib/data";
+import { getPaperUrl } from "@/lib/papers.functions";
+
 
 export const Route = createFileRoute("/papers")({
   head: () => ({
@@ -25,7 +29,75 @@ export const Route = createFileRoute("/papers")({
   component: PapersPage,
 });
 
+function PaperRow({
+  courseCode,
+  year,
+  session,
+  hasSolution,
+}: {
+  courseCode: string;
+  year: number;
+  session: "June" | "December";
+  hasSolution: boolean;
+}) {
+  const fetchPaperUrl = useServerFn(getPaperUrl);
+  const [loading, setLoading] = useState(false);
+
+  async function handleDownload() {
+    setLoading(true);
+    const pending = toast.loading(`Fetching ${courseCode} ${session} ${year} paper…`);
+    try {
+      const result = await fetchPaperUrl({ data: { courseCode, year, session } });
+      toast.dismiss(pending);
+      if (result.pdfUrl) {
+        toast.success(`${courseCode} ${session} ${year} paper found — opening PDF`);
+        window.open(result.pdfUrl, "_blank", "noopener,noreferrer");
+      } else {
+        toast.error(
+          `${courseCode} ${session} ${year} paper is not available online yet. We'll keep checking IGNOU's site.`,
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      toast.dismiss(pending);
+      toast.error("Could not reach the paper server. Please try again in a moment.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+      <span className="text-sm font-medium">
+        {session} {year}
+      </span>
+      <div className="flex items-center gap-2">
+        {hasSolution && (
+          <Badge className="bg-success/15 text-success hover:bg-success/15">
+            <FileCheck2 className="mr-1 h-3 w-3" /> Solved
+          </Badge>
+        )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8"
+          onClick={handleDownload}
+          disabled={loading}
+        >
+          {loading ? (
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="mr-1 h-3.5 w-3.5" />
+          )}
+          PDF
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function PapersPage() {
+
   const [sem, setSem] = useState(1);
   const [query, setQuery] = useState("");
 
@@ -90,24 +162,16 @@ function PapersPage() {
 
                 <div className="mt-4 space-y-2">
                   {list.slice(0, 4).map((p) => (
-                    <div
+                    <PaperRow
                       key={p.year + p.session}
-                      className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2"
-                    >
-                      <span className="text-sm font-medium">{p.session} {p.year}</span>
-                      <div className="flex items-center gap-2">
-                        {p.hasSolution && (
-                          <Badge className="bg-success/15 text-success hover:bg-success/15">
-                            <FileCheck2 className="mr-1 h-3 w-3" /> Solved
-                          </Badge>
-                        )}
-                        <Button size="sm" variant="outline" className="h-8">
-                          <Download className="mr-1 h-3.5 w-3.5" /> PDF
-                        </Button>
-                      </div>
-                    </div>
+                      courseCode={s.courseCode}
+                      year={p.year}
+                      session={p.session}
+                      hasSolution={p.hasSolution}
+                    />
                   ))}
                 </div>
+
               </div>
             );
           })}
