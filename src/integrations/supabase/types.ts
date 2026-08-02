@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      question_papers: {
+        Row: {
+          course_code: string
+          created_at: string
+          fetched_at: string
+          has_solution: boolean
+          id: string
+          pdf_url: string | null
+          session: string
+          source_url: string | null
+          status: string
+          title: string | null
+          year: number
+        }
+        Insert: {
+          course_code: string
+          created_at?: string
+          fetched_at?: string
+          has_solution?: boolean
+          id?: string
+          pdf_url?: string | null
+          session: string
+          source_url?: string | null
+          status?: string
+          title?: string | null
+          year: number
+        }
+        Update: {
+          course_code?: string
+          created_at?: string
+          fetched_at?: string
+          has_solution?: boolean
+          id?: string
+          pdf_url?: string | null
+          session?: string
+          source_url?: string | null
+          status?: string
+          title?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
