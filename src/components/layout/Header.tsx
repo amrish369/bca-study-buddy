@@ -3,6 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { Menu, X, GraduationCap } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/hooks/useSession";
+
 
 const nav = [
   { to: "/papers", label: "Previous Papers" },
@@ -15,6 +17,8 @@ const nav = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const { session } = useSession();
+
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-lg">
@@ -44,8 +48,9 @@ export function Header() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link to="/dashboard">Get Started</Link>
+            <Link to={session ? "/dashboard" : "/auth"}>{session ? "My Dashboard" : "Student Login"}</Link>
           </Button>
+
           <button
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border lg:hidden"
             onClick={() => setOpen((v) => !v)}

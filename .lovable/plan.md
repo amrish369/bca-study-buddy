@@ -1,39 +1,45 @@
-## Problem
+# Assignments Download + Student Login + IGNOU Portal Links
 
-Abhi `/papers` page ka data `src/lib/data.ts` me hardcoded hai aur "PDF" button ka koi `onClick` nahi hai (`src/routes/papers.tsx`, line 104-106) — na koi file, na koi link. Isliye download kuch nahi karta.
+## 1. Assignment PDFs — same auto-fetch as question papers
 
-## Approach
+Assignments page abhi 5 hardcoded cards dikhata hai aur dono Download buttons kuch nahi karte. Papers wala working system yahan bhi lagayenge:
 
-Papers internet se live fetch karenge (eGyanKosh / IGNOU public sources) Firecrawl ke through, aur result cache karke Download button ko asli PDF link par point karenge.
+- Naya cache table `assignments_files` (course code, session, type: question/solved, PDF link, status, last checked).
+- Server-side resolver jo IGNOU ke official assignment URL patterns probe karega (ignou.ac.in assignment section + webservices path), na mile to Firecrawl search fallback — bilkul papers.server.ts jaisa.
+- Do server functions: ek single assignment ke liye, ek poore semester ke liye.
+- Har assignment card ke "Question PDF" aur "Solved Guide" button ab loading spinner + toast ke saath asli PDF naye tab me kholenge; na milne par saaf message.
 
-### 1. Connectors + Cloud
-- Firecrawl connector connect karna (web search + scrape ke liye).
-- Lovable Cloud enable karna — fetched paper links cache karne ke liye, taki har click par scraping na ho (fast + credit-saving).
+## 2. Semester-wise subjects + search on Assignments
 
-### 2. Database
-Table `question_papers`:
-- `course_code`, `year`, `session` (June/December), `title`, `pdf_url`, `source_url`, `has_solution`, `fetched_at`
-- Unique constraint (course_code, year, session)
-- Public `SELECT` policy `anon` + `authenticated` ke liye; writes sirf server-side (service role)
+- Sem 1–6 pills (papers page jaisa) + search box (subject name ya course code).
+- Assignment list poore BCA syllabus ke subjects se generate hogi (sirf 5 nahi), current session ke saath — har semester ke sabhi subjects ka assignment card.
 
-### 3. Server function: paper resolve/fetch
-`src/lib/papers.functions.ts`
-- `searchPapers({ courseCode })` — pehle DB cache check kare; miss hone par Firecrawl `search` chalaye query jaise `IGNOU BCS-011 previous year question paper pdf site:egyankosh.ac.in` + eGyanKosh listing scrape karke `.pdf` links nikale, phir results DB me cache kare aur return kare.
-- `getPaperUrl({ courseCode, year, session })` — ek specific paper ka direct PDF URL return kare (cache-first, warna on-demand fetch).
-- Firecrawl calls sirf server par; API key `process.env` me handler ke andar padhi jayegi. Gateway ya direct mode connect ke baad flag dekh kar decide hoga.
+## 3. Student login (account + records)
 
-### 4. Frontend `/papers`
-- Subject card expand hone par us course ke papers server se load honge (TanStack Query).
-- Download button:
-  - PDF URL mila → naye tab me kholega / download karega
-  - abhi resolve ho raha hai → spinner "Fetching…"
-  - nahi mila → **toast**: "Ye paper abhi online nahi mila — hum dhoondh rahe hain" (aapka chuna hua behaviour)
-- Sonner `<Toaster />` root route me mount karna (modern stack me by default nahi hota).
+- Email/password + Google sign-in (Google provider usi turn me configure hoga).
+- `/auth` page: sign in / sign up, password reset ke saath `/reset-password` page.
+- Header me session-aware button: signed out → "Student Login", signed in → account menu (Dashboard, Sign out).
+- Tables (sab RLS ke saath, sirf apna data dikhega):
+  - `profiles` — name, enrolment number, current semester, study centre (signup par auto ban jayega).
+  - `study_progress` — subject-wise progress + weak topics (dashboard ka localStorage data yahan migrate).
+  - `study_plan` — user ka banaya plan: subject, target date, daily target, status.
+  - `download_history` — kaun paper/assignment kholi, saved/bookmark flag.
+  - `assignment_submissions` — kaun assignment submit kiya, date, marks/status.
+- Dashboard `/dashboard` protected area me jayega: profile ke semester se pages auto-filter, progress rings, plan builder, downloads history, submission tracker. Signed-out user ko login CTA dikhega.
 
-### 5. Reality check
-IGNOU khud har purane paper ka PDF public host nahi karta; eGyanKosh par bahut milte hain par 100% coverage guarantee nahi. Jahan link na mile, wahan toast + "request paper" ka option rahega, aur baad me admin upload option add kar sakte hain.
+## 4. IGNOU official portals section
+
+Header dropdown + dashboard/footer me quick links card:
+- eGyanKosh (study material)
+- IGNOU Samarth student portal
+- Online assignment submission portal
+- Grade card / result, Re-registration, Exam form
+Sabhi external links `target="_blank"` + `rel="noopener"`.
 
 ## Technical notes
-- Firecrawl `search` + `scrape` (formats: `links`) — server-side only, cached in DB to limit credits.
-- PDF stream nahi karenge, direct source URL par bhejenge (fast, storage-free); zarurat pade to baad me Cloud Storage me mirror kar sakte hain.
-- Mock `papers` array ko DB-backed query se replace karenge; `subjects` metadata local hi rahega.
+
+- Auth: Lovable Cloud auth; protected routes `src/routes/_authenticated/` ke andar, dashboard wahan move hoga; public landing/papers/courses SSR public rahenge.
+- Roles/admin panel is scope me nahi (baad me ho sakta hai).
+- Assignment resolver ke liye wahi Firecrawl connector use hoga jo papers ke liye already connected hai.
+- Har naye table par GRANT + RLS policies `auth.uid()` se scoped.
+- Nayi routes (`/auth`, `/reset-password`, `/lms` links) par apna SEO head metadata.

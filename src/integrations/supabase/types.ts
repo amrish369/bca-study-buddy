@@ -14,6 +14,144 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_files: {
+        Row: {
+          course_code: string
+          created_at: string
+          fetched_at: string
+          id: string
+          kind: string
+          pdf_url: string | null
+          session: string
+          source_url: string | null
+          status: string
+        }
+        Insert: {
+          course_code: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          kind?: string
+          pdf_url?: string | null
+          session: string
+          source_url?: string | null
+          status?: string
+        }
+        Update: {
+          course_code?: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          kind?: string
+          pdf_url?: string | null
+          session?: string
+          source_url?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      assignment_submissions: {
+        Row: {
+          course_code: string
+          created_at: string
+          id: string
+          marks: number | null
+          session: string
+          status: string
+          submitted_on: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_code: string
+          created_at?: string
+          id?: string
+          marks?: number | null
+          session: string
+          status?: string
+          submitted_on?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_code?: string
+          created_at?: string
+          id?: string
+          marks?: number | null
+          session?: string
+          status?: string
+          submitted_on?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      download_history: {
+        Row: {
+          course_code: string
+          created_at: string
+          id: string
+          label: string
+          pdf_url: string | null
+          resource_type: string
+          saved: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_code: string
+          created_at?: string
+          id?: string
+          label: string
+          pdf_url?: string | null
+          resource_type: string
+          saved?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_code?: string
+          created_at?: string
+          id?: string
+          label?: string
+          pdf_url?: string | null
+          resource_type?: string
+          saved?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          current_semester: number | null
+          enrolment_no: string | null
+          full_name: string | null
+          id: string
+          study_centre: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_semester?: number | null
+          enrolment_no?: string | null
+          full_name?: string | null
+          id: string
+          study_centre?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_semester?: number | null
+          enrolment_no?: string | null
+          full_name?: string | null
+          id?: string
+          study_centre?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       question_papers: {
         Row: {
           course_code: string
@@ -53,6 +191,72 @@ export type Database = {
           status?: string
           title?: string | null
           year?: number
+        }
+        Relationships: []
+      }
+      study_plan: {
+        Row: {
+          course_code: string
+          created_at: string
+          daily_minutes: number
+          id: string
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_code: string
+          created_at?: string
+          daily_minutes?: number
+          id?: string
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_code?: string
+          created_at?: string
+          daily_minutes?: number
+          id?: string
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_progress: {
+        Row: {
+          completed: boolean
+          course_code: string
+          created_at: string
+          id: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          course_code: string
+          created_at?: string
+          id?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          course_code?: string
+          created_at?: string
+          id?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
