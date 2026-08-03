@@ -123,3 +123,21 @@ export function papersForCourse(courseCode: string) {
     .filter((p) => p.courseCode === courseCode)
     .sort((a, b) => b.year - a.year || (a.session === "December" ? -1 : 1));
 }
+
+/** Current IGNOU assignment session (July 2025 – June 2026 cycle). */
+export const currentAssignmentSession = "2025-26";
+
+export function assignmentsBySemester(sem: number) {
+  return subjectsBySemester(sem).map((s) => {
+    const meta = assignments.find((a) => a.courseCode === s.courseCode);
+    return {
+      courseCode: s.courseCode,
+      title: s.title,
+      semester: s.semester,
+      credits: s.credits,
+      session: currentAssignmentSession,
+      deadline: meta?.deadline ?? "2026-08-31",
+      solved: meta?.solved ?? false,
+    };
+  });
+}
