@@ -44,8 +44,9 @@ export function Header() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link to="/dashboard">Get Started</Link>
+            <Link to={session ? "/dashboard" : "/auth"}>{session ? "My Dashboard" : "Student Login"}</Link>
           </Button>
+
           <button
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border lg:hidden"
             onClick={() => setOpen((v) => !v)}
