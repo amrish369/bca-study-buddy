@@ -3,6 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { Menu, X, GraduationCap } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/hooks/useSession";
+
 
 const nav = [
   { to: "/papers", label: "Previous Papers" },
