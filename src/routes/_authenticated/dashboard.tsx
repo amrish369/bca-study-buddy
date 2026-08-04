@@ -87,7 +87,12 @@ function DashboardPage() {
   const deletePlanFn = useServerFn(deletePlanItem);
   const setSubmissionFn = useServerFn(setSubmission);
 
-  const records = useQuery({ queryKey: ["my-records"], queryFn: () => fetchRecords() });
+  const records = useQuery({
+    queryKey: ["my-records"],
+    queryFn: () => fetchRecords(),
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
 
   const [sem, setSem] = useState(1);
   const [examMonth, setExamMonth] = useState<keyof typeof EXAM_DATES>("June");

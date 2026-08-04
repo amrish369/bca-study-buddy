@@ -9,7 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ignouPortals } from "@/lib/portals";
 
+const REDIRECT_STASH_KEY = "bca-auth-redirect";
+
+function safePath(value: unknown): string {
+  if (typeof value !== "string") return "/dashboard";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  if (value.startsWith("/auth")) return "/dashboard";
+  return value;
+}
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Student Login & Sign Up — IGNOU BCA Master Hub" },
@@ -35,6 +47,8 @@ type Mode = "signin" | "signup" | "forgot";
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { redirect: redirectParam } = Route.useSearch();
+  const target = safePath(redirectParam);
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,16 +58,24 @@ function AuthPage() {
   const [confirmSent, setConfirmSent] = useState(false);
 
   useEffect(() => {
+    function go() {
+      let to = target;
+      const stashed = sessionStorage.getItem(REDIRECT_STASH_KEY);
+      if (stashed) {
+        sessionStorage.removeItem(REDIRECT_STASH_KEY);
+        if (to === "/dashboard") to = safePath(stashed);
+      }
+      navigate({ to, replace: true });
+    }
+
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+      if (data.session) go();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        navigate({ to: "/dashboard", replace: true });
-      }
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) go();
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, target]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +117,7 @@ function AuthPage() {
   async function handleGoogle() {
     setBusy(true);
     try {
+      sessionStorage.setItem(REDIRECT_STASH_KEY, target);
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
