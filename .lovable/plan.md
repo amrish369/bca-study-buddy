@@ -1,45 +1,25 @@
-# Assignments Download + Student Login + IGNOU Portal Links
+# Login redirect-back + instant records after sign-in
 
-## 1. Assignment PDFs — same auto-fetch as question papers
+Right now a protected page (`/dashboard`) sends signed-out users to `/auth`, but the blocked URL is forgotten: after login everyone lands on `/dashboard`, even if they were trying to open another protected page. This plan makes login return you to exactly where you were, and makes your saved records appear immediately after sign-in.
 
-Assignments page abhi 5 hardcoded cards dikhata hai aur dono Download buttons kuch nahi karte. Papers wala working system yahan bhi lagayenge:
+## What changes for the student
 
-- Naya cache table `assignments_files` (course code, session, type: question/solved, PDF link, status, last checked).
-- Server-side resolver jo IGNOU ke official assignment URL patterns probe karega (ignou.ac.in assignment section + webservices path), na mile to Firecrawl search fallback — bilkul papers.server.ts jaisa.
-- Do server functions: ek single assignment ke liye, ek poore semester ke liye.
-- Har assignment card ke "Question PDF" aur "Solved Guide" button ab loading spinner + toast ke saath asli PDF naye tab me kholenge; na milne par saaf message.
+1. Open a protected page while signed out → you go to the login page, and after a successful login (email or Google) you land back on that same page.
+2. If you came to login directly, you still land on the dashboard as before.
+3. Right after login, plan + progress + download history + submissions load immediately — no stale empty state, no manual refresh.
 
-## 2. Semester-wise subjects + search on Assignments
+## Technical details
 
-- Sem 1–6 pills (papers page jaisa) + search box (subject name ya course code).
-- Assignment list poore BCA syllabus ke subjects se generate hogi (sirf 5 nahi), current session ke saath — har semester ke sabhi subjects ka assignment card.
+**Redirect capture (`src/routes/_authenticated/route.tsx`)**
+- In `beforeLoad`, throw `redirect({ to: "/auth", search: { redirect: location.href } })` so the blocked URL is preserved in the URL.
 
-## 3. Student login (account + records)
+**Login page (`src/routes/auth.tsx`)**
+- Add `validateSearch` for an optional `redirect` string; accept only same-origin app paths starting with `/` (and not `//`), else fall back to `/dashboard`.
+- Replace the current hardcoded `navigate({ to: "/dashboard" })` in both the already-signed-in check and the `onAuthStateChange` handler with navigation to the validated target.
+- Google OAuth: keep `redirect_uri: window.location.origin` (same-origin requirement) and stash the intended path in `sessionStorage` before starting OAuth; on mount, if a session exists and a stashed path is present, consume it and navigate there. This keeps OAuth working while still returning the user to the original page.
 
-- Email/password + Google sign-in (Google provider usi turn me configure hoga).
-- `/auth` page: sign in / sign up, password reset ke saath `/reset-password` page.
-- Header me session-aware button: signed out → "Student Login", signed in → account menu (Dashboard, Sign out).
-- Tables (sab RLS ke saath, sirf apna data dikhega):
-  - `profiles` — name, enrolment number, current semester, study centre (signup par auto ban jayega).
-  - `study_progress` — subject-wise progress + weak topics (dashboard ka localStorage data yahan migrate).
-  - `study_plan` — user ka banaya plan: subject, target date, daily target, status.
-  - `download_history` — kaun paper/assignment kholi, saved/bookmark flag.
-  - `assignment_submissions` — kaun assignment submit kiya, date, marks/status.
-- Dashboard `/dashboard` protected area me jayega: profile ke semester se pages auto-filter, progress rings, plan builder, downloads history, submission tracker. Signed-out user ko login CTA dikhega.
+**Fresh records after login (`src/routes/_authenticated/dashboard.tsx`)**
+- Set the `my-records` query to refetch on mount (`staleTime: 0` / `refetchOnMount: "always"`) so a fresh sign-in never renders another session's cached or empty data.
+- Ensure the auth listener in the root route invalidates cached queries on `SIGNED_IN` so records refetch as soon as the session lands.
 
-## 4. IGNOU official portals section
-
-Header dropdown + dashboard/footer me quick links card:
-- eGyanKosh (study material)
-- IGNOU Samarth student portal
-- Online assignment submission portal
-- Grade card / result, Re-registration, Exam form
-Sabhi external links `target="_blank"` + `rel="noopener"`.
-
-## Technical notes
-
-- Auth: Lovable Cloud auth; protected routes `src/routes/_authenticated/` ke andar, dashboard wahan move hoga; public landing/papers/courses SSR public rahenge.
-- Roles/admin panel is scope me nahi (baad me ho sakta hai).
-- Assignment resolver ke liye wahi Firecrawl connector use hoga jo papers ke liye already connected hai.
-- Har naye table par GRANT + RLS policies `auth.uid()` se scoped.
-- Nayi routes (`/auth`, `/reset-password`, `/lms` links) par apna SEO head metadata.
+No database or backend changes are needed — existing record server functions already return everything the dashboard shows.
