@@ -124,14 +124,37 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function AuthSync() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        queryClient.invalidateQueries();
+        router.invalidate();
+      }
+      if (event === "SIGNED_OUT") {
+        queryClient.clear();
+        router.invalidate();
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [queryClient, router]);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AuthSync />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster />
     </QueryClientProvider>
   );
 }
+
