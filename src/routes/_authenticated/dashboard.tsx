@@ -15,6 +15,8 @@ import {
   Trash2,
   LogOut,
   UserRound,
+  RefreshCw,
+  Award,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SiteLayout } from "@/components/layout/SiteLayout";
@@ -23,7 +25,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { semesters, subjectsBySemester, currentAssignmentSession } from "@/lib/data";
+import {
+  semesters,
+  subjectsBySemester,
+  currentAssignmentSession,
+  IGNOU_PROGRAMME_CODES,
+  type IgnouProgrammeCode,
+} from "@/lib/data";
+import { syncMyGradeCard } from "@/lib/gradecard.functions";
 import { ignouPortals } from "@/lib/portals";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -86,6 +95,7 @@ function DashboardPage() {
   const updatePlanFn = useServerFn(updatePlanStatus);
   const deletePlanFn = useServerFn(deletePlanItem);
   const setSubmissionFn = useServerFn(setSubmission);
+  const syncGradeCardFn = useServerFn(syncMyGradeCard);
 
   const records = useQuery({
     queryKey: ["my-records"],
@@ -96,15 +106,18 @@ function DashboardPage() {
 
   const [sem, setSem] = useState(1);
   const [examMonth, setExamMonth] = useState<keyof typeof EXAM_DATES>("June");
+  const [syncing, setSyncing] = useState(false);
   const [profileForm, setProfileForm] = useState({
     fullName: "",
     enrolmentNo: "",
     currentSemester: 1,
     studyCentre: "",
+    programmeCode: "BCA_NEWOL" as IgnouProgrammeCode,
   });
   const [planForm, setPlanForm] = useState({ courseCode: "", title: "", targetDate: "", dailyMinutes: 60 });
 
   const profile = records.data?.profile ?? null;
+  const gradeCard = records.data?.gradeCard ?? [];
 
   useEffect(() => {
     if (!profile) return;
@@ -113,12 +126,19 @@ function DashboardPage() {
       enrolmentNo: profile.enrolment_no ?? "",
       currentSemester: profile.current_semester ?? 1,
       studyCentre: profile.study_centre ?? "",
+      programmeCode: (IGNOU_PROGRAMME_CODES as readonly string[]).includes(profile.programme_code)
+        ? (profile.programme_code as IgnouProgrammeCode)
+        : "BCA_NEWOL",
     });
     if (profile.current_semester) setSem(profile.current_semester);
   }, [profile]);
 
   const cd = useCountdown(EXAM_DATES[examMonth]);
-  const subjects = subjectsBySemester(sem);
+  const subjects = subjectsBySemester(
+    sem,
+    profileForm.programmeCode.startsWith("BCA_NEW") ? "BCA_NEWOL" : "BCA",
+  );
+
 
   const doneMap = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -166,6 +186,36 @@ function DashboardPage() {
       toast.error("Could not save profile");
     }
   }
+
+  async function handleSyncGradeCard() {
+    if (!/^\d{8,12}$/.test(profileForm.enrolmentNo.trim())) {
+      toast.error("Enter a valid enrolment number (8–12 digits) first.");
+      return;
+    }
+    setSyncing(true);
+    const pending = toast.loading("Fetching your grade card from IGNOU…");
+    try {
+      const result = await syncGradeCardFn({
+        data: {
+          enrolmentNo: profileForm.enrolmentNo.trim(),
+          programmeCode: profileForm.programmeCode,
+        },
+      });
+      toast.dismiss(pending);
+      if (result.status === "found") {
+        toast.success(`Grade card saved — ${result.rows.length} courses`);
+        refresh();
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.dismiss(pending);
+      toast.error("Could not fetch the grade card right now.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
 
   async function handleAddPlan(e: React.FormEvent) {
     e.preventDefault();
@@ -351,11 +401,81 @@ function DashboardPage() {
                   onChange={(e) => setProfileForm({ ...profileForm, studyCentre: e.target.value })}
                 />
               </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="programmeCode">Programme</Label>
+                <select
+                  id="programmeCode"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={profileForm.programmeCode}
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, programmeCode: e.target.value as IgnouProgrammeCode })
+                  }
+                >
+                  {IGNOU_PROGRAMME_CODES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <Button type="submit" className="mt-4">
-              Save profile
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button type="submit">Save profile</Button>
+              <Button type="button" variant="outline" onClick={handleSyncGradeCard} disabled={syncing}>
+                {syncing ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-1 h-4 w-4" />
+                )}
+                Fetch grade card
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Grade card is fetched live from IGNOU using your enrolment number and saved to your account.
+            </p>
           </form>
+
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+            <div className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              <h3 className="font-bold">My grade card ({profileForm.programmeCode})</h3>
+            </div>
+            {gradeCard.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">
+                No marks saved yet — enter your enrolment number, pick your programme and hit “Fetch grade
+                card”.
+              </p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase text-muted-foreground">
+                      <th className="py-2">Course</th>
+                      <th className="py-2">Asgn</th>
+                      <th className="py-2">Theory</th>
+                      <th className="py-2">Practical</th>
+                      <th className="py-2">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gradeCard.map((g) => (
+                      <tr key={g.id} className="border-t border-border">
+                        <td className="py-2 font-mono text-xs">{g.course_code}</td>
+                        <td className="py-2">{g.assignment_marks ?? "—"}</td>
+                        <td className="py-2">{g.theory_marks ?? "—"}</td>
+                        <td className="py-2">{g.practical_marks ?? "—"}</td>
+                        <td className="py-2 font-semibold">{g.total ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
             <div className="flex items-center gap-2">
