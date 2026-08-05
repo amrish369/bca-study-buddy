@@ -351,11 +351,81 @@ function DashboardPage() {
                   onChange={(e) => setProfileForm({ ...profileForm, studyCentre: e.target.value })}
                 />
               </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="programmeCode">Programme</Label>
+                <select
+                  id="programmeCode"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={profileForm.programmeCode}
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, programmeCode: e.target.value as IgnouProgrammeCode })
+                  }
+                >
+                  {IGNOU_PROGRAMME_CODES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <Button type="submit" className="mt-4">
-              Save profile
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button type="submit">Save profile</Button>
+              <Button type="button" variant="outline" onClick={handleSyncGradeCard} disabled={syncing}>
+                {syncing ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-1 h-4 w-4" />
+                )}
+                Fetch grade card
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Grade card is fetched live from IGNOU using your enrolment number and saved to your account.
+            </p>
           </form>
+
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+            <div className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              <h3 className="font-bold">My grade card ({profileForm.programmeCode})</h3>
+            </div>
+            {gradeCard.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">
+                No marks saved yet — enter your enrolment number, pick your programme and hit “Fetch grade
+                card”.
+              </p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase text-muted-foreground">
+                      <th className="py-2">Course</th>
+                      <th className="py-2">Asgn</th>
+                      <th className="py-2">Theory</th>
+                      <th className="py-2">Practical</th>
+                      <th className="py-2">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gradeCard.map((g) => (
+                      <tr key={g.id} className="border-t border-border">
+                        <td className="py-2 font-mono text-xs">{g.course_code}</td>
+                        <td className="py-2">{g.assignment_marks ?? "—"}</td>
+                        <td className="py-2">{g.theory_marks ?? "—"}</td>
+                        <td className="py-2">{g.practical_marks ?? "—"}</td>
+                        <td className="py-2 font-semibold">{g.total ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
             <div className="flex items-center gap-2">
