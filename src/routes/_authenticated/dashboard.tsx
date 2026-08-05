@@ -177,6 +177,36 @@ function DashboardPage() {
     }
   }
 
+  async function handleSyncGradeCard() {
+    if (!/^\d{8,12}$/.test(profileForm.enrolmentNo.trim())) {
+      toast.error("Enter a valid enrolment number (8–12 digits) first.");
+      return;
+    }
+    setSyncing(true);
+    const pending = toast.loading("Fetching your grade card from IGNOU…");
+    try {
+      const result = await syncGradeCardFn({
+        data: {
+          enrolmentNo: profileForm.enrolmentNo.trim(),
+          programmeCode: profileForm.programmeCode,
+        },
+      });
+      toast.dismiss(pending);
+      if (result.status === "found") {
+        toast.success(`Grade card saved — ${result.rows.length} courses`);
+        refresh();
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.dismiss(pending);
+      toast.error("Could not fetch the grade card right now.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+
   async function handleAddPlan(e: React.FormEvent) {
     e.preventDefault();
     try {
