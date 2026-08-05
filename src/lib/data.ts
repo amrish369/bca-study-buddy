@@ -210,3 +210,7 @@ export function assignmentsBySemester(sem: number, programme: Programme = defaul
     };
   });
 }
+
+/** Programme codes exactly as listed on the IGNOU grade card portal. */
+export const IGNOU_PROGRAMME_CODES = ["BCA_NEWOL", "BCA_NEW", "BCAOL", "BCA"] as const;
+export type IgnouProgrammeCode = (typeof IGNOU_PROGRAMME_CODES)[number];

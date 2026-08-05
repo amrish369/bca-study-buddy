@@ -15,6 +15,8 @@ import {
   Trash2,
   LogOut,
   UserRound,
+  RefreshCw,
+  Award,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SiteLayout } from "@/components/layout/SiteLayout";
@@ -23,7 +25,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { semesters, subjectsBySemester, currentAssignmentSession } from "@/lib/data";
+import {
+  semesters,
+  subjectsBySemester,
+  currentAssignmentSession,
+  IGNOU_PROGRAMME_CODES,
+  type IgnouProgrammeCode,
+} from "@/lib/data";
+import { syncMyGradeCard } from "@/lib/gradecard.functions";
 import { ignouPortals } from "@/lib/portals";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -86,6 +95,7 @@ function DashboardPage() {
   const updatePlanFn = useServerFn(updatePlanStatus);
   const deletePlanFn = useServerFn(deletePlanItem);
   const setSubmissionFn = useServerFn(setSubmission);
+  const syncGradeCardFn = useServerFn(syncMyGradeCard);
 
   const records = useQuery({
     queryKey: ["my-records"],
