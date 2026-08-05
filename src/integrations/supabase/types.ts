@@ -122,6 +122,51 @@ export type Database = {
         }
         Relationships: []
       }
+      grade_card_records: {
+        Row: {
+          assignment_marks: number | null
+          course_code: string
+          created_at: string
+          fetched_at: string
+          id: string
+          practical_marks: number | null
+          programme: string
+          status: string | null
+          theory_marks: number | null
+          total: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_marks?: number | null
+          course_code: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          practical_marks?: number | null
+          programme: string
+          status?: string | null
+          theory_marks?: number | null
+          total?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_marks?: number | null
+          course_code?: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          practical_marks?: number | null
+          programme?: string
+          status?: string | null
+          theory_marks?: number | null
+          total?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -129,6 +174,7 @@ export type Database = {
           enrolment_no: string | null
           full_name: string | null
           id: string
+          programme_code: string
           study_centre: string | null
           updated_at: string
         }
@@ -138,6 +184,7 @@ export type Database = {
           enrolment_no?: string | null
           full_name?: string | null
           id: string
+          programme_code?: string
           study_centre?: string | null
           updated_at?: string
         }
@@ -147,6 +194,7 @@ export type Database = {
           enrolment_no?: string | null
           full_name?: string | null
           id?: string
+          programme_code?: string
           study_centre?: string | null
           updated_at?: string
         }
