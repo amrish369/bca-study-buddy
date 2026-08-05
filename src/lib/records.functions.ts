@@ -42,6 +42,7 @@ export const saveMyProfile = createServerFn({ method: "POST" })
         enrolmentNo: z.string().trim().max(30),
         currentSemester: z.number().int().min(1).max(6),
         studyCentre: z.string().trim().max(100),
+        programmeCode: z.enum(["BCA", "BCAOL", "BCA_NEW", "BCA_NEWOL"]).default("BCA_NEWOL"),
       })
       .parse(data),
   )
@@ -52,6 +53,7 @@ export const saveMyProfile = createServerFn({ method: "POST" })
       enrolment_no: data.enrolmentNo,
       current_semester: data.currentSemester,
       study_centre: data.studyCentre,
+      programme_code: data.programmeCode,
       updated_at: new Date().toISOString(),
     });
     if (error) throw new Error(error.message);
