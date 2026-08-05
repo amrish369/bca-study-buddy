@@ -96,15 +96,18 @@ function DashboardPage() {
 
   const [sem, setSem] = useState(1);
   const [examMonth, setExamMonth] = useState<keyof typeof EXAM_DATES>("June");
+  const [syncing, setSyncing] = useState(false);
   const [profileForm, setProfileForm] = useState({
     fullName: "",
     enrolmentNo: "",
     currentSemester: 1,
     studyCentre: "",
+    programmeCode: "BCA_NEWOL" as IgnouProgrammeCode,
   });
   const [planForm, setPlanForm] = useState({ courseCode: "", title: "", targetDate: "", dailyMinutes: 60 });
 
   const profile = records.data?.profile ?? null;
+  const gradeCard = records.data?.gradeCard ?? [];
 
   useEffect(() => {
     if (!profile) return;
@@ -113,12 +116,19 @@ function DashboardPage() {
       enrolmentNo: profile.enrolment_no ?? "",
       currentSemester: profile.current_semester ?? 1,
       studyCentre: profile.study_centre ?? "",
+      programmeCode: (IGNOU_PROGRAMME_CODES as readonly string[]).includes(profile.programme_code)
+        ? (profile.programme_code as IgnouProgrammeCode)
+        : "BCA_NEWOL",
     });
     if (profile.current_semester) setSem(profile.current_semester);
   }, [profile]);
 
   const cd = useCountdown(EXAM_DATES[examMonth]);
-  const subjects = subjectsBySemester(sem);
+  const subjects = subjectsBySemester(
+    sem,
+    profileForm.programmeCode.startsWith("BCA_NEW") ? "BCA_NEWOL" : "BCA",
+  );
+
 
   const doneMap = useMemo(() => {
     const map: Record<string, boolean> = {};
