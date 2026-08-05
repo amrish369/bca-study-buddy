@@ -1,7 +1,23 @@
-// Central mock data for IGNOU BCA Master Hub.
-// Once Lovable Cloud is enabled, these arrays are replaced by live DB queries.
+// Central course data for IGNOU BCA Master Hub.
+// Two programmes are supported: the older BCA (revised syllabus) and the
+// current BCA_NEWOL / BCA_NEW structure (120 credits, July 2024 onwards).
 
 export type Session = "June" | "December";
+
+export type Programme = "BCA" | "BCA_NEWOL";
+
+export const programmes: { code: Programme; label: string; description: string }[] = [
+  {
+    code: "BCA_NEWOL",
+    label: "BCA_NEWOL (current)",
+    description: "New 120-credit BCA structure — July 2024 onwards",
+  },
+  {
+    code: "BCA",
+    label: "BCA (old)",
+    description: "Earlier BCA revised syllabus — pre-2024 admissions",
+  },
+];
 
 export interface Subject {
   courseCode: string;
@@ -9,6 +25,7 @@ export interface Subject {
   semester: number;
   credits: number;
   units: number;
+  programme: Programme;
   importantTopics: string[];
 }
 
@@ -44,36 +61,81 @@ export interface RepeatTrend {
   probability: number; // 0-100
 }
 
-export const subjects: Subject[] = [
-  { courseCode: "BCS-011", title: "Computer Basics & PC Software", semester: 1, credits: 4, units: 16, importantTopics: ["Number systems", "MS Office", "Operating systems"] },
-  { courseCode: "BCS-012", title: "Basic Mathematics", semester: 1, credits: 4, units: 12, importantTopics: ["Matrices", "Determinants", "Differentiation"] },
-  { courseCode: "ECO-01", title: "Business Organisation", semester: 1, credits: 4, units: 14, importantTopics: ["Forms of business", "Stock exchange"] },
-  { courseCode: "FEG-02", title: "Foundation Course in English", semester: 1, credits: 4, units: 10, importantTopics: ["Comprehension", "Grammar", "Essay writing"] },
+/** Older BCA (pre-2024) syllabus. */
+export const oldBcaSubjects: Subject[] = [
+  { programme: "BCA", courseCode: "BCS-011", title: "Computer Basics & PC Software", semester: 1, credits: 4, units: 16, importantTopics: ["Number systems", "MS Office", "Operating systems"] },
+  { programme: "BCA", courseCode: "BCS-012", title: "Basic Mathematics", semester: 1, credits: 4, units: 12, importantTopics: ["Matrices", "Determinants", "Differentiation"] },
+  { programme: "BCA", courseCode: "ECO-01", title: "Business Organisation", semester: 1, credits: 4, units: 14, importantTopics: ["Forms of business", "Stock exchange"] },
+  { programme: "BCA", courseCode: "FEG-02", title: "Foundation Course in English", semester: 1, credits: 4, units: 10, importantTopics: ["Comprehension", "Grammar", "Essay writing"] },
 
-  { courseCode: "BCS-031", title: "Programming in C++", semester: 2, credits: 4, units: 18, importantTopics: ["OOP concepts", "Inheritance", "Polymorphism", "Templates"] },
-  { courseCode: "BCS-040", title: "Statistical Techniques", semester: 2, credits: 4, units: 14, importantTopics: ["Probability", "Hypothesis testing", "Correlation"] },
-  { courseCode: "MCS-011", title: "Problem Solving and Programming", semester: 2, credits: 3, units: 12, importantTopics: ["Pointers", "Arrays", "File handling"] },
-  { courseCode: "MCS-012", title: "Computer Organisation & Assembly", semester: 2, credits: 4, units: 20, importantTopics: ["Number systems", "ALU", "Memory organisation"] },
+  { programme: "BCA", courseCode: "BCS-031", title: "Programming in C++", semester: 2, credits: 4, units: 18, importantTopics: ["OOP concepts", "Inheritance", "Polymorphism", "Templates"] },
+  { programme: "BCA", courseCode: "BCS-040", title: "Statistical Techniques", semester: 2, credits: 4, units: 14, importantTopics: ["Probability", "Hypothesis testing", "Correlation"] },
+  { programme: "BCA", courseCode: "MCS-011", title: "Problem Solving and Programming", semester: 2, credits: 3, units: 12, importantTopics: ["Pointers", "Arrays", "File handling"] },
+  { programme: "BCA", courseCode: "MCS-012", title: "Computer Organisation & Assembly", semester: 2, credits: 4, units: 20, importantTopics: ["Number systems", "ALU", "Memory organisation"] },
 
-  { courseCode: "MCS-013", title: "Discrete Mathematics", semester: 3, credits: 2, units: 10, importantTopics: ["Sets", "Graph theory", "Boolean algebra"] },
-  { courseCode: "MCS-014", title: "Systems Analysis and Design", semester: 3, credits: 3, units: 14, importantTopics: ["SDLC", "DFD", "ER diagrams"] },
-  { courseCode: "MCS-015", title: "Communication Skills", semester: 3, credits: 2, units: 8, importantTopics: ["Listening", "Presentation skills"] },
-  { courseCode: "BCS-053", title: "Web Programming", semester: 3, credits: 4, units: 16, importantTopics: ["HTML/CSS", "JavaScript", "DHTML"] },
+  { programme: "BCA", courseCode: "MCS-013", title: "Discrete Mathematics", semester: 3, credits: 2, units: 10, importantTopics: ["Sets", "Graph theory", "Boolean algebra"] },
+  { programme: "BCA", courseCode: "MCS-014", title: "Systems Analysis and Design", semester: 3, credits: 3, units: 14, importantTopics: ["SDLC", "DFD", "ER diagrams"] },
+  { programme: "BCA", courseCode: "MCS-015", title: "Communication Skills", semester: 3, credits: 2, units: 8, importantTopics: ["Listening", "Presentation skills"] },
+  { programme: "BCA", courseCode: "BCS-053", title: "Web Programming", semester: 3, credits: 4, units: 16, importantTopics: ["HTML/CSS", "JavaScript", "DHTML"] },
 
-  { courseCode: "MCS-021", title: "Data and File Structures", semester: 4, credits: 4, units: 18, importantTopics: ["Trees", "Sorting", "Hashing", "Graphs"] },
-  { courseCode: "MCS-023", title: "Database Management Systems", semester: 4, credits: 3, units: 16, importantTopics: ["Normalization", "SQL", "ER model", "Transactions"] },
-  { courseCode: "BCS-040", title: "Statistical Techniques", semester: 4, credits: 4, units: 14, importantTopics: ["Regression", "Sampling"] },
-  { courseCode: "BCSL-045", title: "Web Programming Lab", semester: 4, credits: 2, units: 6, importantTopics: ["Practical web apps"] },
+  { programme: "BCA", courseCode: "MCS-021", title: "Data and File Structures", semester: 4, credits: 4, units: 18, importantTopics: ["Trees", "Sorting", "Hashing", "Graphs"] },
+  { programme: "BCA", courseCode: "MCS-023", title: "Database Management Systems", semester: 4, credits: 3, units: 16, importantTopics: ["Normalization", "SQL", "ER model", "Transactions"] },
+  { programme: "BCA", courseCode: "BCSL-045", title: "Web Programming Lab", semester: 4, credits: 2, units: 6, importantTopics: ["Practical web apps"] },
 
-  { courseCode: "MCS-024", title: "Object Oriented Tech & Java", semester: 5, credits: 4, units: 18, importantTopics: ["JVM", "Collections", "Exception handling", "Threads"] },
-  { courseCode: "BCS-051", title: "Introduction to Software Engineering", semester: 5, credits: 4, units: 16, importantTopics: ["Process models", "Testing", "Project management"] },
-  { courseCode: "BCS-052", title: "Network Programming & Administration", semester: 5, credits: 4, units: 16, importantTopics: ["TCP/IP", "Sockets", "Routing"] },
-  { courseCode: "BCS-054", title: "Computer Oriented Numerical Techniques", semester: 5, credits: 4, units: 12, importantTopics: ["Interpolation", "Numerical integration"] },
+  { programme: "BCA", courseCode: "MCS-024", title: "Object Oriented Tech & Java", semester: 5, credits: 4, units: 18, importantTopics: ["JVM", "Collections", "Exception handling", "Threads"] },
+  { programme: "BCA", courseCode: "BCS-051", title: "Introduction to Software Engineering", semester: 5, credits: 4, units: 16, importantTopics: ["Process models", "Testing", "Project management"] },
+  { programme: "BCA", courseCode: "BCS-052", title: "Network Programming & Administration", semester: 5, credits: 4, units: 16, importantTopics: ["TCP/IP", "Sockets", "Routing"] },
+  { programme: "BCA", courseCode: "BCS-054", title: "Computer Oriented Numerical Techniques", semester: 5, credits: 4, units: 12, importantTopics: ["Interpolation", "Numerical integration"] },
 
-  { courseCode: "MCS-022", title: "Operating System Concepts & Networking", semester: 6, credits: 4, units: 20, importantTopics: ["Scheduling", "Deadlocks", "Memory management"] },
-  { courseCode: "BCS-062", title: "E-Commerce", semester: 6, credits: 4, units: 14, importantTopics: ["EDI", "Payment systems", "Security"] },
-  { courseCode: "BCSP-064", title: "Project", semester: 6, credits: 8, units: 0, importantTopics: ["Synopsis", "Implementation", "Report"] },
+  { programme: "BCA", courseCode: "MCS-022", title: "Operating System Concepts & Networking", semester: 6, credits: 4, units: 20, importantTopics: ["Scheduling", "Deadlocks", "Memory management"] },
+  { programme: "BCA", courseCode: "BCS-062", title: "E-Commerce", semester: 6, credits: 4, units: 14, importantTopics: ["EDI", "Payment systems", "Security"] },
+  { programme: "BCA", courseCode: "BCSP-064", title: "Project", semester: 6, credits: 8, units: 0, importantTopics: ["Synopsis", "Implementation", "Report"] },
 ];
+
+/** Current BCA_NEWOL / BCA_NEW structure (120 credits, July 2024 onwards). */
+export const newBcaSubjects: Subject[] = [
+  { programme: "BCA_NEWOL", courseCode: "BEVAE-181", title: "Environmental Studies", semester: 1, credits: 4, units: 16, importantTopics: ["Ecosystems", "Biodiversity", "Pollution control"] },
+  { programme: "BCA_NEWOL", courseCode: "BEGLA-136", title: "English at Work Place", semester: 1, credits: 6, units: 14, importantTopics: ["Business writing", "Presentation", "Grammar"] },
+  { programme: "BCA_NEWOL", courseCode: "BCS-111", title: "Computer Basics and PC Software", semester: 1, credits: 4, units: 16, importantTopics: ["Number systems", "MS Office", "Operating systems"] },
+  { programme: "BCA_NEWOL", courseCode: "BCSL-013", title: "Computer Basics and PC Software Lab", semester: 1, credits: 2, units: 6, importantTopics: ["Word/Excel practicals", "Presentations"] },
+  { programme: "BCA_NEWOL", courseCode: "BCS-012", title: "Basic Mathematics", semester: 1, credits: 4, units: 12, importantTopics: ["Matrices", "Determinants", "Differentiation"] },
+
+  { programme: "BCA_NEWOL", courseCode: "FEG-02", title: "Foundation Course in English-2", semester: 2, credits: 4, units: 10, importantTopics: ["Comprehension", "Grammar", "Essay writing"] },
+  { programme: "BCA_NEWOL", courseCode: "MCS-201", title: "Programming in C and Python", semester: 2, credits: 4, units: 18, importantTopics: ["Pointers", "Functions", "Python data types", "File handling"] },
+  { programme: "BCA_NEWOL", courseCode: "MCS-202", title: "Computer Organisation", semester: 2, credits: 4, units: 16, importantTopics: ["ALU design", "Memory hierarchy", "Instruction cycle"] },
+  { programme: "BCA_NEWOL", courseCode: "MCS-203", title: "Operating Systems", semester: 2, credits: 4, units: 16, importantTopics: ["Scheduling", "Deadlocks", "Memory management"] },
+  { programme: "BCA_NEWOL", courseCode: "MCSL-204", title: "WINDOWS and LINUX Lab", semester: 2, credits: 2, units: 6, importantTopics: ["Shell commands", "System administration"] },
+  { programme: "BCA_NEWOL", courseCode: "MCSL-205", title: "C and Python Lab", semester: 2, credits: 2, units: 6, importantTopics: ["C programs", "Python scripts"] },
+
+  { programme: "BCA_NEWOL", courseCode: "MCS-207", title: "Database Management Systems", semester: 3, credits: 4, units: 16, importantTopics: ["Normalization", "SQL", "ER model", "Transactions"] },
+  { programme: "BCA_NEWOL", courseCode: "MCS-208", title: "Data Structures and Algorithms", semester: 3, credits: 4, units: 18, importantTopics: ["Trees", "Sorting", "Hashing", "Graphs"] },
+  { programme: "BCA_NEWOL", courseCode: "MCSL-209", title: "Data Structures and Algorithms Lab", semester: 3, credits: 2, units: 6, importantTopics: ["Implementation practicals"] },
+  { programme: "BCA_NEWOL", courseCode: "BCS-131", title: "Programming in C++", semester: 3, credits: 4, units: 18, importantTopics: ["OOP concepts", "Inheritance", "Polymorphism", "Templates"] },
+  { programme: "BCA_NEWOL", courseCode: "BCSL-135", title: "DBMS and C++ Lab", semester: 3, credits: 2, units: 6, importantTopics: ["SQL queries", "C++ programs"] },
+  { programme: "BCA_NEWOL", courseCode: "BCS-040", title: "Statistical Techniques", semester: 3, credits: 4, units: 14, importantTopics: ["Probability", "Hypothesis testing", "Correlation"] },
+
+  { programme: "BCA_NEWOL", courseCode: "MCS-206", title: "Object Oriented Programming using Java", semester: 4, credits: 4, units: 18, importantTopics: ["JVM", "Collections", "Exception handling", "Threads"] },
+  { programme: "BCA_NEWOL", courseCode: "BCSL-146", title: "Object Oriented Programming using Java Lab", semester: 4, credits: 2, units: 6, importantTopics: ["Java practicals"] },
+  { programme: "BCA_NEWOL", courseCode: "BCS-053", title: "Web Programming", semester: 4, credits: 2, units: 12, importantTopics: ["HTML/CSS", "JavaScript", "PHP basics"] },
+  { programme: "BCA_NEWOL", courseCode: "BCSL-147", title: "Web Programming Lab", semester: 4, credits: 2, units: 6, importantTopics: ["Web app practicals"] },
+  { programme: "BCA_NEWOL", courseCode: "BCS-041", title: "Fundamentals of Computer Networks", semester: 4, credits: 4, units: 16, importantTopics: ["OSI/TCP-IP", "Routing", "Network security"] },
+  { programme: "BCA_NEWOL", courseCode: "BCOC-131", title: "Financial Accounting", semester: 4, credits: 6, units: 18, importantTopics: ["Journal & ledger", "Final accounts", "Depreciation"] },
+
+  { programme: "BCA_NEWOL", courseCode: "BCS-151", title: "Introduction to Software Engineering", semester: 5, credits: 4, units: 16, importantTopics: ["Process models", "Testing", "Project management"] },
+  { programme: "BCA_NEWOL", courseCode: "BCS-042", title: "Introduction to Algorithm Design", semester: 5, credits: 2, units: 10, importantTopics: ["Complexity", "Greedy", "Divide and conquer"] },
+  { programme: "BCA_NEWOL", courseCode: "BCSL-159", title: "Introduction to Algorithm Design Lab", semester: 5, credits: 2, units: 6, importantTopics: ["Algorithm practicals"] },
+  { programme: "BCA_NEWOL", courseCode: "BCOS-184", title: "E-Commerce", semester: 5, credits: 4, units: 14, importantTopics: ["EDI", "Payment systems", "E-commerce security"] },
+  { programme: "BCA_NEWOL", courseCode: "MSEI-023", title: "Cyber Security", semester: 5, credits: 4, units: 14, importantTopics: ["Threats", "Cryptography", "IT Act"] },
+  { programme: "BCA_NEWOL", courseCode: "BECS-184", title: "Data Analysis", semester: 5, credits: 4, units: 14, importantTopics: ["Descriptive statistics", "Regression", "Index numbers"] },
+
+  { programme: "BCA_NEWOL", courseCode: "BCOS-185", title: "Entrepreneurship", semester: 6, credits: 4, units: 14, importantTopics: ["Business plan", "Startup finance", "MSME schemes"] },
+  { programme: "BCA_NEWOL", courseCode: "MSEI-027", title: "Digital Forensics", semester: 6, credits: 4, units: 14, importantTopics: ["Evidence handling", "Disk forensics", "Cyber law"] },
+  { programme: "BCA_NEWOL", courseCode: "BCSP-165", title: "Project", semester: 6, credits: 12, units: 0, importantTopics: ["Synopsis", "Implementation", "Report"] },
+];
+
+export const subjects: Subject[] = [...newBcaSubjects, ...oldBcaSubjects];
+
+export const defaultProgramme: Programme = "BCA_NEWOL";
 
 const yearsRange = [2025, 2024, 2023, 2022, 2021];
 export const papers: Paper[] = subjects.flatMap((s) =>
@@ -88,11 +150,13 @@ export const papers: Paper[] = subjects.flatMap((s) =>
 );
 
 export const assignments: Assignment[] = [
-  { courseCode: "BCS-011", title: "Computer Basics Assignment", semester: 1, session: "2025-26", deadline: "2026-07-31", solved: true },
-  { courseCode: "BCS-031", title: "Programming in C++ Assignment", semester: 2, session: "2025-26", deadline: "2026-07-31", solved: true },
-  { courseCode: "MCS-023", title: "DBMS Assignment", semester: 4, session: "2025-26", deadline: "2026-08-15", solved: true },
-  { courseCode: "MCS-024", title: "Java Assignment", semester: 5, session: "2025-26", deadline: "2026-08-15", solved: false },
-  { courseCode: "MCS-022", title: "OS & Networking Assignment", semester: 6, session: "2025-26", deadline: "2026-08-31", solved: false },
+  { courseCode: "BCS-111", title: "Computer Basics and PC Software Assignment", semester: 1, session: "2025-26", deadline: "2026-07-31", solved: true },
+  { courseCode: "BCS-012", title: "Basic Mathematics Assignment", semester: 1, session: "2025-26", deadline: "2026-07-31", solved: true },
+  { courseCode: "MCS-201", title: "C and Python Assignment", semester: 2, session: "2025-26", deadline: "2026-07-31", solved: true },
+  { courseCode: "MCS-207", title: "DBMS Assignment", semester: 3, session: "2025-26", deadline: "2026-08-15", solved: true },
+  { courseCode: "MCS-206", title: "Java Assignment", semester: 4, session: "2025-26", deadline: "2026-08-15", solved: false },
+  { courseCode: "BCS-151", title: "Software Engineering Assignment", semester: 5, session: "2025-26", deadline: "2026-08-31", solved: false },
+  { courseCode: "BCSP-165", title: "Project Guidelines", semester: 6, session: "2025-26", deadline: "2026-08-31", solved: false },
 ];
 
 export const updates: UpdateItem[] = [
@@ -104,18 +168,23 @@ export const updates: UpdateItem[] = [
 ];
 
 export const repeatTrends: RepeatTrend[] = [
-  { topic: "Normalization", subject: "MCS-023 DBMS", years: [2025, 2024, 2022, 2020, 2019], importance: "HIGH", probability: 92 },
-  { topic: "Inheritance & Polymorphism", subject: "BCS-031 C++", years: [2025, 2024, 2023, 2021], importance: "HIGH", probability: 88 },
-  { topic: "Process Scheduling", subject: "MCS-022 OS", years: [2024, 2023, 2022, 2020], importance: "HIGH", probability: 85 },
-  { topic: "Trees & Traversal", subject: "MCS-021 DFS", years: [2025, 2023, 2021], importance: "MEDIUM", probability: 70 },
-  { topic: "Exception Handling", subject: "MCS-024 Java", years: [2024, 2022], importance: "MEDIUM", probability: 64 },
-  { topic: "Graph Theory", subject: "MCS-013 Discrete Maths", years: [2023, 2020], importance: "LOW", probability: 45 },
+  { topic: "Normalization", subject: "MCS-207 DBMS", years: [2025, 2024, 2022, 2020, 2019], importance: "HIGH", probability: 92 },
+  { topic: "Inheritance & Polymorphism", subject: "BCS-131 C++", years: [2025, 2024, 2023, 2021], importance: "HIGH", probability: 88 },
+  { topic: "Process Scheduling", subject: "MCS-203 Operating Systems", years: [2024, 2023, 2022, 2020], importance: "HIGH", probability: 85 },
+  { topic: "Trees & Traversal", subject: "MCS-208 Data Structures", years: [2025, 2023, 2021], importance: "MEDIUM", probability: 70 },
+  { topic: "Exception Handling", subject: "MCS-206 Java", years: [2024, 2022], importance: "MEDIUM", probability: 64 },
+  { topic: "TCP/IP & Routing", subject: "BCS-041 Computer Networks", years: [2025, 2023, 2020], importance: "MEDIUM", probability: 62 },
+  { topic: "Cryptography Basics", subject: "MSEI-023 Cyber Security", years: [2024, 2023], importance: "LOW", probability: 48 },
 ];
 
 export const semesters = [1, 2, 3, 4, 5, 6];
 
-export function subjectsBySemester(sem: number) {
-  return subjects.filter((s) => s.semester === sem);
+export function subjectsBySemester(sem: number, programme: Programme = defaultProgramme) {
+  return subjects.filter((s) => s.semester === sem && s.programme === programme);
+}
+
+export function findSubject(courseCode: string) {
+  return subjects.find((s) => s.courseCode.toUpperCase() === courseCode.toUpperCase());
 }
 
 export function papersForCourse(courseCode: string) {
@@ -127,8 +196,8 @@ export function papersForCourse(courseCode: string) {
 /** Current IGNOU assignment session (July 2025 – June 2026 cycle). */
 export const currentAssignmentSession = "2025-26";
 
-export function assignmentsBySemester(sem: number) {
-  return subjectsBySemester(sem).map((s) => {
+export function assignmentsBySemester(sem: number, programme: Programme = defaultProgramme) {
+  return subjectsBySemester(sem, programme).map((s) => {
     const meta = assignments.find((a) => a.courseCode === s.courseCode);
     return {
       courseCode: s.courseCode,
