@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { semesters, subjectsBySemester, papersForCourse } from "@/lib/data";
+import { StudyVideos } from "@/components/StudyVideos";
 import { getPaperUrl } from "@/lib/papers.functions";
 
 
@@ -172,6 +173,10 @@ function PapersPage() {
                   ))}
                 </div>
 
+                <StudyVideos
+                  query={`IGNOU ${s.courseCode} ${s.title} question paper solution lecture`}
+                  label={`${s.courseCode} paper solution videos`}
+                />
               </div>
             );
           })}
