@@ -12,6 +12,7 @@ import { semesters, assignmentsBySemester, currentAssignmentSession } from "@/li
 import { getAssignmentUrl } from "@/lib/assignments.functions";
 import { logDownload } from "@/lib/records.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { StudyVideos } from "@/components/StudyVideos";
 
 export const Route = createFileRoute("/assignments")({
   head: () => ({
@@ -177,6 +178,11 @@ function AssignmentsPage() {
                 {a.solved && <DownloadButton courseCode={a.courseCode} title={a.title} kind="solved" />}
                 <span className="text-xs text-muted-foreground">Session {a.session}</span>
               </div>
+
+              <StudyVideos
+                query={`IGNOU ${a.courseCode} ${a.title} assignment ${a.session} solution video`}
+                label={`${a.courseCode} assignment solution videos`}
+              />
             </div>
           ))}
         </div>
