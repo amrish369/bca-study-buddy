@@ -172,6 +172,10 @@ function PapersPage() {
                   ))}
                 </div>
 
+                <StudyVideos
+                  query={`IGNOU ${s.courseCode} ${s.title} question paper solution lecture`}
+                  label={`${s.courseCode} paper solution videos`}
+                />
               </div>
             );
           })}
