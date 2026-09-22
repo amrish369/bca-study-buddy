@@ -32,7 +32,7 @@ import {
   IGNOU_PROGRAMME_CODES,
   type IgnouProgrammeCode,
 } from "@/lib/data";
-import { syncMyGradeCard } from "@/lib/gradecard.functions";
+import { syncMyIgnouRecords } from "@/lib/ignou.functions";
 import { ignouPortals } from "@/lib/portals";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -95,7 +95,7 @@ function DashboardPage() {
   const updatePlanFn = useServerFn(updatePlanStatus);
   const deletePlanFn = useServerFn(deletePlanItem);
   const setSubmissionFn = useServerFn(setSubmission);
-  const syncGradeCardFn = useServerFn(syncMyGradeCard);
+  const syncAllFn = useServerFn(syncMyIgnouRecords);
 
   const records = useQuery({
     queryKey: ["my-records"],
@@ -118,6 +118,22 @@ function DashboardPage() {
 
   const profile = records.data?.profile ?? null;
   const gradeCard = records.data?.gradeCard ?? [];
+  const assignmentStatus = records.data?.assignmentStatus ?? [];
+  const ignouSummary = (profile?.ignou_summary ?? null) as {
+    coursesFound?: number;
+    coursesCompleted?: number;
+    assignmentRecords?: number;
+    syncedAt?: string;
+    gradeCardMessage?: string;
+    assignmentMessage?: string;
+  } | null;
+  const completedCourses = gradeCard.filter((g) => {
+    const s = (g.status ?? "").toLowerCase();
+    return s.includes("completed") && !s.includes("not");
+  }).length;
+  const coursePercent = gradeCard.length
+    ? Math.round((completedCourses / gradeCard.length) * 100)
+    : 0;
 
   useEffect(() => {
     if (!profile) return;
@@ -187,30 +203,38 @@ function DashboardPage() {
     }
   }
 
-  async function handleSyncGradeCard() {
+  async function handleSyncIgnou() {
     if (!/^\d{8,12}$/.test(profileForm.enrolmentNo.trim())) {
       toast.error("Enter a valid enrolment number (8–12 digits) first.");
       return;
     }
     setSyncing(true);
-    const pending = toast.loading("Fetching your grade card from IGNOU…");
+    const pending = toast.loading("Signing in to IGNOU and fetching your records…");
     try {
-      const result = await syncGradeCardFn({
+      const result = await syncAllFn({
         data: {
           enrolmentNo: profileForm.enrolmentNo.trim(),
           programmeCode: profileForm.programmeCode,
         },
       });
       toast.dismiss(pending);
-      if (result.status === "found") {
-        toast.success(`Grade card saved — ${result.rows.length} courses`);
-        refresh();
+
+      if (result.gradeCard.status === "found") {
+        toast.success(`Result saved — ${result.gradeCard.rows.length} courses`);
       } else {
-        toast.error(result.message);
+        toast.error(result.gradeCard.message);
       }
+
+      if (result.assignments.status === "found") {
+        toast.success(`Assignment status saved — ${result.assignments.rows.length} records`);
+      } else {
+        toast.message("Assignment status", { description: result.assignments.message });
+      }
+
+      refresh();
     } catch {
       toast.dismiss(pending);
-      toast.error("Could not fetch the grade card right now.");
+      toast.error("Could not reach IGNOU right now. Please try again shortly.");
     } finally {
       setSyncing(false);
     }
@@ -421,18 +445,26 @@ function DashboardPage() {
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button type="submit">Save profile</Button>
-              <Button type="button" variant="outline" onClick={handleSyncGradeCard} disabled={syncing}>
+              <Button type="button" variant="outline" onClick={handleSyncIgnou} disabled={syncing}>
                 {syncing ? (
                   <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                 ) : (
                   <RefreshCw className="mr-1 h-4 w-4" />
                 )}
-                Fetch grade card
+                Sync all IGNOU records
               </Button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Grade card is fetched live from IGNOU using your enrolment number and saved to your account.
+              Your results, assignment marks and submission status are fetched live from IGNOU with your
+              enrolment number and saved to your account.
             </p>
+            {ignouSummary?.syncedAt && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Last synced {new Date(ignouSummary.syncedAt).toLocaleString()} ·{" "}
+                {ignouSummary.coursesFound ?? 0} courses · {ignouSummary.assignmentRecords ?? 0}{" "}
+                assignment records
+              </p>
+            )}
           </form>
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">

@@ -9,7 +9,8 @@ export const getMyRecords = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const [profile, progress, plan, downloads, submissions, gradeCard] = await Promise.all([
+    const [profile, progress, plan, downloads, submissions, gradeCard, assignmentStatus] =
+      await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase.from("study_progress").select("*").eq("user_id", userId),
       supabase.from("study_plan").select("*").eq("user_id", userId).order("target_date"),
@@ -20,8 +21,17 @@ export const getMyRecords = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false })
         .limit(30),
       supabase.from("assignment_submissions").select("*").eq("user_id", userId),
-      supabase.from("grade_card_records").select("*").eq("user_id", userId).order("course_code"),
-    ]);
+        supabase
+          .from("grade_card_records")
+          .select("*")
+          .eq("user_id", userId)
+          .order("course_code"),
+        supabase
+          .from("assignment_status_records")
+          .select("*")
+          .eq("user_id", userId)
+          .order("course_code"),
+      ]);
 
     return {
       profile: profile.data ?? null,
@@ -30,6 +40,7 @@ export const getMyRecords = createServerFn({ method: "POST" })
       downloads: downloads.data ?? [],
       submissions: submissions.data ?? [],
       gradeCard: gradeCard.data ?? [],
+      assignmentStatus: assignmentStatus.data ?? [],
     };
   });
 
