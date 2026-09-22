@@ -445,18 +445,26 @@ function DashboardPage() {
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button type="submit">Save profile</Button>
-              <Button type="button" variant="outline" onClick={handleSyncGradeCard} disabled={syncing}>
+              <Button type="button" variant="outline" onClick={handleSyncIgnou} disabled={syncing}>
                 {syncing ? (
                   <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                 ) : (
                   <RefreshCw className="mr-1 h-4 w-4" />
                 )}
-                Fetch grade card
+                Sync all IGNOU records
               </Button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Grade card is fetched live from IGNOU using your enrolment number and saved to your account.
+              Your results, assignment marks and submission status are fetched live from IGNOU with your
+              enrolment number and saved to your account.
             </p>
+            {ignouSummary?.syncedAt && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Last synced {new Date(ignouSummary.syncedAt).toLocaleString()} ·{" "}
+                {ignouSummary.coursesFound ?? 0} courses · {ignouSummary.assignmentRecords ?? 0}{" "}
+                assignment records
+              </p>
+            )}
           </form>
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
