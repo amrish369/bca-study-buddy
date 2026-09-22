@@ -9,7 +9,8 @@ export const getMyRecords = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const [profile, progress, plan, downloads, submissions, gradeCard] = await Promise.all([
+    const [profile, progress, plan, downloads, submissions, gradeCard, assignmentStatus] =
+      await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase.from("study_progress").select("*").eq("user_id", userId),
       supabase.from("study_plan").select("*").eq("user_id", userId).order("target_date"),
