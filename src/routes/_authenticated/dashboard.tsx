@@ -33,7 +33,7 @@ import {
   type IgnouProgrammeCode,
 } from "@/lib/data";
 import { syncMyIgnouRecords } from "@/lib/ignou.functions";
-import { ignouPortals } from "@/lib/portals";
+import { ignouPortals, portalUrls } from "@/lib/portals";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getMyRecords,
@@ -458,6 +458,18 @@ function DashboardPage() {
               Your results, assignment marks and submission status are fetched live from IGNOU with your
               enrolment number and saved to your account.
             </p>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              <a href={portalUrls.gradeCard} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                Open grade card
+              </a>
+              <a href={portalUrls.result} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                Open TEE result
+              </a>
+              <a href={portalUrls.assignmentStatus} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                Open assignment status
+              </a>
+            </div>
+
             {ignouSummary?.syncedAt && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Last synced {new Date(ignouSummary.syncedAt).toLocaleString()} ·{" "}

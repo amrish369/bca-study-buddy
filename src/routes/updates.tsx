@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Bell, CalendarDays, GraduationCap, FileText, RefreshCw, Award } from "lucide-react";
+import { Bell, CalendarDays, GraduationCap, FileText, RefreshCw, Award, ExternalLink } from "lucide-react";
 import { SiteLayout } from "@/components/layout/SiteLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ignouPortals } from "@/lib/portals";
 import { updates, type UpdateItem } from "@/lib/data";
+
 
 export const Route = createFileRoute("/updates")({
   head: () => ({
@@ -56,13 +59,48 @@ function UpdatesPage() {
                     <Badge variant="secondary">{u.category}</Badge>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{u.summary}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">{new Date(u.date).toLocaleDateString()}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <p className="text-xs text-muted-foreground">{new Date(u.date).toLocaleDateString()}</p>
+                    {u.actionUrl && (
+                      <Button asChild size="sm" variant="outline">
+                        <a href={u.actionUrl} target="_blank" rel="noopener noreferrer">
+                          {u.actionLabel ?? "Open portal"}
+                          <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+
+        <div className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+          <h2 className="font-bold">All official IGNOU portals</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Verified working links for result, grade card, assignment status and more.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {ignouPortals.map((p) => (
+              <a
+                key={p.url}
+                href={p.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group rounded-xl border border-border p-4 transition-colors hover:border-primary/60 hover:bg-primary/5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{p.name}</span>
+                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
+
     </SiteLayout>
   );
 }
