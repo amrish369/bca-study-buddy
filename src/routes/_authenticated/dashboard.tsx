@@ -474,39 +474,116 @@ function DashboardPage() {
             </div>
             {gradeCard.length === 0 ? (
               <p className="mt-4 text-sm text-muted-foreground">
-                No marks saved yet — enter your enrolment number, pick your programme and hit “Fetch grade
-                card”.
+                No marks saved yet — enter your enrolment number, pick your programme and hit “Sync all
+                IGNOU records”.
               </p>
             ) : (
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs uppercase text-muted-foreground">
-                      <th className="py-2">Course</th>
-                      <th className="py-2">Asgn</th>
-                      <th className="py-2">Theory</th>
-                      <th className="py-2">Practical</th>
-                      <th className="py-2">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {gradeCard.map((g) => (
-                      <tr key={g.id} className="border-t border-border">
-                        <td className="py-2 font-mono text-xs">{g.course_code}</td>
-                        <td className="py-2">{g.assignment_marks ?? "—"}</td>
-                        <td className="py-2">{g.theory_marks ?? "—"}</td>
-                        <td className="py-2">{g.practical_marks ?? "—"}</td>
-                        <td className="py-2 font-semibold">{g.total ?? "—"}</td>
+              <>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {completedCourses} of {gradeCard.length} courses completed
+                    </span>
+                    <span className="font-bold text-foreground">{coursePercent}%</span>
+                  </div>
+                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-success transition-all"
+                      style={{ width: `${coursePercent}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase text-muted-foreground">
+                        <th className="py-2">Course</th>
+                        <th className="py-2">Asgn</th>
+                        <th className="py-2">Theory</th>
+                        <th className="py-2">Practical</th>
+                        <th className="py-2">Total</th>
+                        <th className="py-2">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {gradeCard.map((g) => {
+                        const s = (g.status ?? "").toLowerCase();
+                        const done = s.includes("completed") && !s.includes("not");
+                        return (
+                          <tr key={g.id} className="border-t border-border">
+                            <td className="py-2 font-mono text-xs">{g.course_code}</td>
+                            <td className="py-2">{g.assignment_marks ?? "—"}</td>
+                            <td className="py-2">{g.theory_marks ?? "—"}</td>
+                            <td className="py-2">{g.practical_marks ?? "—"}</td>
+                            <td className="py-2 font-semibold">{g.total ?? "—"}</td>
+                            <td className="py-2">
+                              {g.status ? (
+                                <Badge
+                                  className={
+                                    done
+                                      ? "bg-success/15 text-success hover:bg-success/15"
+                                      : "bg-destructive/15 text-destructive hover:bg-destructive/15"
+                                  }
+                                >
+                                  {done ? "Completed" : "Not completed"}
+                                </Badge>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
 
+        {/* Official IGNOU assignment / project status */}
+        <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5 text-primary" />
+            <h3 className="font-bold">Official IGNOU assignment &amp; project status</h3>
+          </div>
+          {assignmentStatus.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              {ignouSummary?.assignmentMessage ??
+                "Nothing here yet — sync your IGNOU records to pull your official assignment, project and practical marks status."}
+            </p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase text-muted-foreground">
+                    <th className="py-2">Course</th>
+                    <th className="py-2">Session</th>
+                    <th className="py-2">Marks</th>
+                    <th className="py-2">Status</th>
+                    <th className="py-2">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignmentStatus.map((a) => (
+                    <tr key={a.id} className="border-t border-border">
+                      <td className="py-2 font-mono text-xs">{a.course_code}</td>
+                      <td className="py-2">{a.session ?? "—"}</td>
+                      <td className="py-2 font-semibold">{a.marks ?? "—"}</td>
+                      <td className="py-2">{a.status ?? "—"}</td>
+                      <td className="py-2 text-xs text-muted-foreground">{a.remarks ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
+
+
 
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
