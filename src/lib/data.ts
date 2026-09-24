@@ -163,12 +163,13 @@ export const assignments: Assignment[] = [
 ];
 
 export const updates: UpdateItem[] = [
-  { id: "u1", title: "June 2026 TEE Exam Form Open", category: "Exam", date: "2026-06-10", summary: "Submit your Term End Exam form before the last date without late fee." },
-  { id: "u2", title: "Hall Ticket June 2026 Released", category: "Hall Ticket", date: "2026-06-14", summary: "Download your June 2026 hall ticket from the IGNOU portal." },
-  { id: "u3", title: "December 2025 Result Declared", category: "Result", date: "2026-06-02", summary: "Check your December 2025 TEE results and grade card online." },
-  { id: "u4", title: "Assignment Submission Extended", category: "Assignment", date: "2026-05-28", summary: "Last date for 2025-26 assignment submission extended to 31 Aug 2026." },
-  { id: "u5", title: "Re-registration July 2026 Cycle", category: "Registration", date: "2026-05-20", summary: "Re-register for the next semester to continue your BCA programme." },
+  { id: "u1", title: "June 2026 TEE Exam Form Open", category: "Exam", date: "2026-06-10", summary: "Submit your Term End Exam form before the last date without late fee.", actionLabel: "Fill exam form", actionUrl: "https://exam.ignou.ac.in/" },
+  { id: "u2", title: "Hall Ticket June 2026 Released", category: "Hall Ticket", date: "2026-06-14", summary: "Download your June 2026 hall ticket from the IGNOU portal.", actionLabel: "Download hall ticket", actionUrl: "https://exam.ignou.ac.in/" },
+  { id: "u3", title: "December 2025 Result Declared", category: "Result", date: "2026-06-02", summary: "Check your December 2025 TEE results and grade card online.", actionLabel: "Check result", actionUrl: "https://termendresult.ignou.ac.in/" },
+  { id: "u4", title: "Assignment Submission Extended", category: "Assignment", date: "2026-05-28", summary: "Last date for 2025-26 assignment submission extended to 31 Aug 2026.", actionLabel: "Check assignment status", actionUrl: "https://isms.ignou.ac.in/changeadmdata/StatusAssignment.ASP" },
+  { id: "u5", title: "Re-registration July 2026 Cycle", category: "Registration", date: "2026-05-20", summary: "Re-register for the next semester to continue your BCA programme.", actionLabel: "Re-register now", actionUrl: "https://onlinerr.ignou.ac.in/" },
 ];
+
 
 export const repeatTrends: RepeatTrend[] = [
   { topic: "Normalization", subject: "MCS-207 DBMS", years: [2025, 2024, 2022, 2020, 2019], importance: "HIGH", probability: 92 },
