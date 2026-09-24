@@ -51,7 +51,10 @@ export interface UpdateItem {
   category: "Exam" | "Result" | "Assignment" | "Registration" | "Hall Ticket";
   date: string; // ISO date
   summary: string;
+  actionLabel?: string;
+  actionUrl?: string;
 }
+
 
 export interface RepeatTrend {
   topic: string;
