@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { semesters, subjectsBySemester } from "@/lib/data";
 import { StudyVideos } from "@/components/StudyVideos";
+import { SubjectLessons } from "@/components/SubjectLessons";
 
 export const Route = createFileRoute("/courses")({
   head: () => ({
@@ -80,8 +81,10 @@ function CoursesPage() {
 
               <StudyVideos
                 query={`IGNOU ${s.courseCode} ${s.title} full lecture in hindi`}
-                label={`${s.courseCode} lecture videos`}
+                label={`${s.courseCode} full course videos`}
               />
+
+              <SubjectLessons courseCode={s.courseCode} subjectTitle={s.title} />
             </div>
           ))}
         </div>
