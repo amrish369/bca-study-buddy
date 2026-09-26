@@ -2,22 +2,29 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronDown, Loader2, Play, Youtube } from "lucide-react";
 import { getStudyVideos } from "@/lib/youtube.functions";
+import { VideoPlayerOverlay } from "@/components/VideoPlayerOverlay";
 
 type Video = { id: string; title: string; channel: string; duration: string | null };
 
 export function StudyVideos({
   query,
   label = "Study videos",
+  chapterLabel,
+  onPlay,
 }: {
   query: string;
   label?: string;
+  /** Shown above the title inside the fullscreen player. */
+  chapterLabel?: string;
+  /** Fired the first time a video from this list is opened. */
+  onPlay?: () => void;
 }) {
   const fetchVideos = useServerFn(getStudyVideos);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [videos, setVideos] = useState<Video[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [playing, setPlaying] = useState<string | null>(null);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
   async function toggle() {
     const next = !open;
@@ -64,43 +71,33 @@ export function StudyVideos({
           {!loading && error && <p className="text-sm text-muted-foreground">{error}</p>}
 
           {!loading &&
-            videos?.map((v) => (
+            videos?.map((v, i) => (
               <div key={v.id} className="rounded-lg border border-border bg-card p-2">
-                {playing === v.id ? (
-                  <div className="aspect-video w-full overflow-hidden rounded-md">
-                    <iframe
-                      src={`https://www.youtube-nocookie.com/embed/${v.id}?autoplay=1&rel=0`}
-                      title={v.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlayingIndex(i);
+                    onPlay?.();
+                  }}
+                  className="flex w-full items-center gap-3 text-left"
+                >
+                  <span className="relative shrink-0">
+                    <img
+                      src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`}
+                      alt={`${v.title} thumbnail`}
                       loading="lazy"
-                      className="h-full w-full border-0"
+                      className="h-14 w-24 rounded-md object-cover"
                     />
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setPlaying(v.id)}
-                    className="flex w-full items-center gap-3 text-left"
-                  >
-                    <span className="relative shrink-0">
-                      <img
-                        src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`}
-                        alt={`${v.title} thumbnail`}
-                        loading="lazy"
-                        className="h-14 w-24 rounded-md object-cover"
-                      />
-                      <Play className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-primary-foreground drop-shadow" />
+                    <Play className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-primary-foreground drop-shadow" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="line-clamp-2 block text-sm font-medium">{v.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {v.channel}
+                      {v.duration ? ` · ${v.duration}` : ""}
                     </span>
-                    <span className="min-w-0">
-                      <span className="line-clamp-2 block text-sm font-medium">{v.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {v.channel}
-                        {v.duration ? ` · ${v.duration}` : ""}
-                      </span>
-                    </span>
-                  </button>
-                )}
+                  </span>
+                </button>
               </div>
             ))}
 
@@ -115,6 +112,16 @@ export function StudyVideos({
             </a>
           )}
         </div>
+      )}
+
+      {playingIndex !== null && videos && videos.length > 0 && (
+        <VideoPlayerOverlay
+          videos={videos}
+          index={playingIndex}
+          chapterLabel={chapterLabel ?? label}
+          onIndexChange={setPlayingIndex}
+          onClose={() => setPlayingIndex(null)}
+        />
       )}
     </div>
   );
