@@ -1,33 +1,64 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-async function callAI(prompt: string, toolName: string, parameters: Record<string, unknown>) {
+function strict(s: any): any {
+  if (s && s.type === "object") {
+    return { ...s, additionalProperties: false, properties: Object.fromEntries(Object.entries(s.properties).map(([k, v]) => [k, strict(v)])) };
+  }
+  if (s && s.type === "array") return { ...s, items: strict(s.items) };
+  return s;
+}
+
+async function callAI(prompt: string, name: string, schema: Record<string, unknown>) {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("AI is not configured");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    headers: {
+      "Lovable-API-Key": key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      "X-Lovable-AIG-SDK": "fetch",
+    },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert IGNOU BCA examiner who knows 10+ years of IGNOU term-end exam papers. Be accurate and exam focused.",
-        },
-        { role: "user", content: prompt },
-      ],
-      tools: [{ type: "function", function: { name: toolName, parameters } }],
-      tool_choice: { type: "function", function: { name: toolName } },
+      model: "openai/gpt-6-astra",
+      stream: true,
+      store: false,
+      reasoning: { effort: "low" },
+      instructions:
+        "You are an expert IGNOU BCA examiner who knows 10+ years of IGNOU term-end exam papers. Be accurate and exam focused.",
+      input: prompt,
+      text: { format: { type: "json_schema", name, strict: true, schema: strict(schema) } },
     }),
   });
   if (res.status === 429) throw new Error("Too many requests, please try again in a minute.");
   if (res.status === 402) throw new Error("AI credits exhausted. Please add credits.");
-  if (!res.ok) throw new Error(`AI request failed (${res.status})`);
-  const json = await res.json();
-  const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  if (!args) throw new Error("AI returned no result");
-  return JSON.parse(args);
+  if (!res.ok || !res.body) throw new Error(`AI request failed (${res.status})`);
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  let out = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const p = line.slice(5).trim();
+      if (!p || p === "[DONE]") continue;
+      try {
+        const ev = JSON.parse(p);
+        if (ev.type === "response.output_text.delta") out += ev.delta ?? "";
+        if (ev.type === "error" || ev.type === "response.failed") throw new Error("AI request failed");
+      } catch (e) {
+        if (e instanceof Error && e.message === "AI request failed") throw e;
+      }
+    }
+  }
+  if (!out) throw new Error("AI returned no result");
+  return JSON.parse(out);
 }
 
 const subjectInput = z.object({
