@@ -3,6 +3,7 @@ import { TrendingUp, Check } from "lucide-react";
 import { SiteLayout } from "@/components/layout/SiteLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { repeatTrends } from "@/lib/data";
+import { SubjectAnalysis } from "@/components/SubjectAnalysis";
 
 export const Route = createFileRoute("/analysis")({
   head: () => ({
@@ -39,6 +40,7 @@ function AnalysisPage() {
       />
 
       <div className="mx-auto max-w-7xl space-y-5 px-4 py-10 sm:px-6">
+        <SubjectAnalysis />
         {repeatTrends.map((t) => (
           <div key={t.topic} className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
             <div className="flex flex-wrap items-center justify-between gap-3">

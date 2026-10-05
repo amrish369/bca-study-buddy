@@ -10,6 +10,7 @@ const nav = [
   { to: "/papers", label: "Previous Papers" },
   { to: "/courses", label: "Courses" },
   { to: "/analysis", label: "PYQ Analysis" },
+  { to: "/quiz", label: "Mock Test" },
   { to: "/assignments", label: "Assignments" },
   { to: "/updates", label: "Updates" },
   { to: "/dashboard", label: "Dashboard" },
