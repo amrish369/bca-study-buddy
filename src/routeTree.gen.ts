@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AnalysisRouteImport } from './routes/analysis'
+import { Route as AssignmentMakerRouteImport } from './routes/assignment-maker'
 import { Route as AssignmentsRouteImport } from './routes/assignments'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoursesRouteImport } from './routes/courses'
@@ -35,6 +36,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AnalysisRoute = AnalysisRouteImport.update({
   id: '/analysis',
   path: '/analysis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssignmentMakerRoute = AssignmentMakerRouteImport.update({
+  id: '/assignment-maker',
+  path: '/assignment-maker',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AssignmentsRoute = AssignmentsRouteImport.update({
@@ -91,6 +97,7 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
+  '/assignment-maker': typeof AssignmentMakerRoute
   '/assignments': typeof AssignmentsRoute
   '/auth': typeof AuthRoute
   '/courses': typeof CoursesRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
+  '/assignment-maker': typeof AssignmentMakerRoute
   '/assignments': typeof AssignmentsRoute
   '/auth': typeof AuthRoute
   '/courses': typeof CoursesRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/analysis': typeof AnalysisRoute
+  '/assignment-maker': typeof AssignmentMakerRoute
   '/assignments': typeof AssignmentsRoute
   '/auth': typeof AuthRoute
   '/courses': typeof CoursesRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/analysis'
+    | '/assignment-maker'
     | '/assignments'
     | '/auth'
     | '/courses'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/analysis'
+    | '/assignment-maker'
     | '/assignments'
     | '/auth'
     | '/courses'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/analysis'
+    | '/assignment-maker'
     | '/assignments'
     | '/auth'
     | '/courses'
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AnalysisRoute: typeof AnalysisRoute
+  AssignmentMakerRoute: typeof AssignmentMakerRoute
   AssignmentsRoute: typeof AssignmentsRoute
   AuthRoute: typeof AuthRoute
   CoursesRoute: typeof CoursesRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/analysis'
       fullPath: '/analysis'
       preLoaderRoute: typeof AnalysisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assignment-maker': {
+      id: '/assignment-maker'
+      path: '/assignment-maker'
+      fullPath: '/assignment-maker'
+      preLoaderRoute: typeof AssignmentMakerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/assignments': {
@@ -304,6 +324,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AnalysisRoute: AnalysisRoute,
+  AssignmentMakerRoute: AssignmentMakerRoute,
   AssignmentsRoute: AssignmentsRoute,
   AuthRoute: AuthRoute,
   CoursesRoute: CoursesRoute,
