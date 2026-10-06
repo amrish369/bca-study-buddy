@@ -209,3 +209,38 @@ Return 12 most important repeated questions sorted by probability of appearing i
     const qs = ((r.questions ?? []) as ImportantQA[]).sort((a, b) => b.probability - a.probability);
     return { questions: qs };
   });
+
+export type AssignmentAnswer = { qno: string; question: string; marks: number; answer: string };
+
+export const solveAssignment = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      courseCode: z.string().min(2).max(20),
+      title: z.string().min(2).max(200),
+      session: z.string().max(20),
+      questionsText: z.string().max(8000),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await callAI(
+      `Solve the IGNOU BCA assignment for ${data.courseCode} ${data.title}, session ${data.session}.
+${data.questionsText.trim() ? `Assignment questions given by student:\n${data.questionsText}` : "Questions not provided: write the typical official IGNOU assignment for this course (usually 4-8 questions, total 100 marks)."}
+For every question give the question number, full question text, marks, and a complete exam-quality answer in simple English that a student can copy by hand. Length must suit the marks (~40 words per mark, max 600 words). Use headings, "- " bullet points, steps, formulas, and code where relevant. Plain text only, no markdown symbols like ** or #.`,
+      "assignment_solution",
+      {
+        type: "object",
+        properties: {
+          answers: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: { qno: { type: "string" }, question: { type: "string" }, marks: { type: "number" }, answer: { type: "string" } },
+              required: ["qno", "question", "marks", "answer"],
+            },
+          },
+        },
+        required: ["answers"],
+      },
+    );
+    return { answers: (r.answers ?? []) as AssignmentAnswer[] };
+  });
