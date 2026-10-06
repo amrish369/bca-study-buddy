@@ -11,6 +11,7 @@ const nav = [
   { to: "/courses", label: "Courses" },
   { to: "/analysis", label: "PYQ Analysis" },
   { to: "/quiz", label: "Mock Test" },
+  { to: "/questions", label: "Guess Paper" },
   { to: "/assignments", label: "Assignments" },
   { to: "/updates", label: "Updates" },
   { to: "/dashboard", label: "Dashboard" },

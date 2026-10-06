@@ -162,3 +162,50 @@ export const generateQuiz = createServerFn({ method: "POST" })
     );
     return { questions: qs };
   });
+
+export type ImportantQA = {
+  question: string;
+  unit: string;
+  marks: number;
+  years: string[];
+  timesAsked: number;
+  probability: number;
+  answer: string;
+  examTip: string;
+};
+
+export const getImportantQA = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => subjectInput.parse(d))
+  .handler(async ({ data }) => {
+    const r = await callAI(
+      `For IGNOU ${data.courseCode} ${data.title}, analyse term-end exam papers of the last 15 years (2011-2025, June & December sessions).
+Units: ${data.lessons.join("; ") || "use the official syllabus"}.
+Return 12 most important repeated questions sorted by probability of appearing in the upcoming exam. For each: exact IGNOU-style question, unit, marks, sessions asked (like "Jun 2019", "Dec 2022"), timesAsked, probability 0-100, an exam-ready model answer in Hinglish (Hindi in Roman script mixed with English technical terms; use definition, key points as "- " bullets, code/syntax if relevant; 120-250 words), and a short scoring tip.`,
+      "important_qa",
+      {
+        type: "object",
+        properties: {
+          questions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                question: { type: "string" },
+                unit: { type: "string" },
+                marks: { type: "number" },
+                years: { type: "array", items: { type: "string" } },
+                timesAsked: { type: "number" },
+                probability: { type: "number" },
+                answer: { type: "string" },
+                examTip: { type: "string" },
+              },
+              required: ["question", "unit", "marks", "years", "timesAsked", "probability", "answer", "examTip"],
+            },
+          },
+        },
+        required: ["questions"],
+      },
+    );
+    const qs = ((r.questions ?? []) as ImportantQA[]).sort((a, b) => b.probability - a.probability);
+    return { questions: qs };
+  });
