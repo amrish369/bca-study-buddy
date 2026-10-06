@@ -16,6 +16,7 @@ import { Route as AssignmentsRouteImport } from './routes/assignments'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as PapersRouteImport } from './routes/papers'
+import { Route as QuestionsRouteImport } from './routes/questions'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -56,6 +57,11 @@ const PapersRoute = PapersRouteImport.update({
   path: '/papers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QuestionsRoute = QuestionsRouteImport.update({
+  id: '/questions',
+  path: '/questions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizRoute = QuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/courses': typeof CoursesRoute
   '/papers': typeof PapersRoute
+  '/questions': typeof QuestionsRoute
   '/quiz': typeof QuizRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/courses': typeof CoursesRoute
   '/papers': typeof PapersRoute
+  '/questions': typeof QuestionsRoute
   '/quiz': typeof QuizRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/courses': typeof CoursesRoute
   '/papers': typeof PapersRoute
+  '/questions': typeof QuestionsRoute
   '/quiz': typeof QuizRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/courses'
     | '/papers'
+    | '/questions'
     | '/quiz'
     | '/reset-password'
     | '/sitemap.xml'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/courses'
     | '/papers'
+    | '/questions'
     | '/quiz'
     | '/reset-password'
     | '/sitemap.xml'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/courses'
     | '/papers'
+    | '/questions'
     | '/quiz'
     | '/reset-password'
     | '/sitemap.xml'
@@ -174,6 +186,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CoursesRoute: typeof CoursesRoute
   PapersRoute: typeof PapersRoute
+  QuestionsRoute: typeof QuestionsRoute
   QuizRoute: typeof QuizRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -229,6 +242,13 @@ declare module '@tanstack/react-router' {
       path: '/papers'
       fullPath: '/papers'
       preLoaderRoute: typeof PapersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/questions': {
+      id: '/questions'
+      path: '/questions'
+      fullPath: '/questions'
+      preLoaderRoute: typeof QuestionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quiz': {
@@ -288,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CoursesRoute: CoursesRoute,
   PapersRoute: PapersRoute,
+  QuestionsRoute: QuestionsRoute,
   QuizRoute: QuizRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
