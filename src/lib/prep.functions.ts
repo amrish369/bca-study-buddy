@@ -35,23 +35,23 @@ async function callGemini(key: string, prompt: string, schema: Record<string, un
   return JSON.parse(out);
 }
 
-async function callGrok(key: string, prompt: string, name: string, schema: Record<string, unknown>) {
-  const res = await fetch("https://api.x.ai/v1/chat/completions", {
+async function callGroq(key: string, prompt: string, _name: string, schema: Record<string, unknown>) {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: "grok-3-mini",
+      model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: SYSTEM },
+        { role: "system", content: `${SYSTEM} Reply ONLY with a JSON object matching this JSON schema: ${JSON.stringify(schema)}` },
         { role: "user", content: prompt },
       ],
-      response_format: { type: "json_schema", json_schema: { name, strict: true, schema: strict(schema) } },
+      response_format: { type: "json_object" },
     }),
   });
-  if (!res.ok) throw new Error(`Grok failed (${res.status})`);
+  if (!res.ok) throw new Error(`Groq failed (${res.status})`);
   const json: any = await res.json();
   const out = json?.choices?.[0]?.message?.content;
-  if (!out) throw new Error("Grok returned no result");
+  if (!out) throw new Error("Groq returned no result");
   return JSON.parse(out);
 }
 
@@ -59,9 +59,10 @@ async function callGrok(key: string, prompt: string, name: string, schema: Recor
 async function callAI(prompt: string, name: string, schema: Record<string, unknown>) {
   const providers: Array<() => Promise<any>> = [];
   const g = process.env["GEMINI_API_KEY"];
-  const x = process.env["GROK_API_KEY"];
+  const gk = process.env["GROK_API_KEY"];
+  const q = process.env["GROQ_API_KEY"] || (gk?.startsWith("gsk_") ? gk : undefined);
   if (g) providers.push(() => callGemini(g, prompt, schema));
-  if (x) providers.push(() => callGrok(x, prompt, name, schema));
+  if (q) providers.push(() => callGroq(q, prompt, name, schema));
   if (!providers.length) throw new Error("AI is not configured");
   let last: unknown;
   for (const p of providers) {
