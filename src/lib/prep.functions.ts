@@ -234,13 +234,14 @@ export const solveAssignment = createServerFn({ method: "POST" })
       title: z.string().min(2).max(200),
       session: z.string().max(20),
       questionsText: z.string().max(8000),
+      instructions: z.string().max(2000).optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
     const r = await callAI(
       `Solve the IGNOU BCA assignment for ${data.courseCode} ${data.title}, session ${data.session}.
 ${data.questionsText.trim() ? `Assignment questions given by student:\n${data.questionsText}` : "Questions not provided: write the typical official IGNOU assignment for this course (usually 4-8 questions, total 100 marks)."}
-For every question give the question number, full question text, marks, and a complete exam-quality answer in simple English that a student can copy by hand. Length must suit the marks (~40 words per mark, max 600 words). Use headings, "- " bullet points, steps, formulas, and code where relevant. Plain text only, no markdown symbols like ** or #.`,
+For every question give the question number, full question text, marks, and a complete exam-quality answer in simple English that a student can copy by hand. Length must suit the marks (~40 words per mark, max 600 words). Use headings, "- " bullet points, steps, formulas, and code where relevant. Plain text only, no markdown symbols like ** or #.${data.instructions?.trim() ? `\nIMPORTANT extra instructions from the student (follow these over the defaults above): ${data.instructions}` : ""}`,
       "assignment_solution",
       {
         type: "object",

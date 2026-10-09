@@ -51,6 +51,7 @@ function MakerPage() {
   const [idCard, setIdCard] = useState<string[]>([]);
   const [qpImgs, setQpImgs] = useState<string[]>([]);
   const [qText, setQText] = useState("");
+  const [instr, setInstr] = useState("");
   const [answers, setAnswers] = useState<AssignmentAnswer[] | null>(null);
   const [loading, setLoading] = useState(false);
   const solve = useServerFn(solveAssignment);
@@ -63,7 +64,7 @@ function MakerPage() {
     if (!subject) return;
     setLoading(true); setAnswers(null);
     try {
-      const r = await solve({ data: { courseCode: subject.courseCode, title: subject.title, session: currentAssignmentSession, questionsText: qText } });
+      const r = await solve({ data: { courseCode: subject.courseCode, title: subject.title, session: currentAssignmentSession, questionsText: qText, instructions: instr } });
       setAnswers(r.answers);
       toast.success("Assignment taiyaar! Neeche preview dekho.");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
@@ -115,6 +116,11 @@ function MakerPage() {
           </div>
           <textarea className="w-full rounded-lg border border-input bg-background p-2 text-sm" rows={5} value={qText} onChange={(e) => setQText(e.target.value)}
             placeholder="Assignment ke questions yahan paste karo (best result). Khali chhodoge to AI typical IGNOU questions khud lega." />
+          <label className="block text-sm">
+            <span className="text-muted-foreground">Instructions (optional) — AI ko batao kya badlav chahiye</span>
+            <textarea className="mt-1 w-full rounded-lg border border-input bg-background p-2 text-sm" rows={3} value={instr} onChange={(e) => setInstr(e.target.value)}
+              placeholder="Jaise: Answers Hindi me likho / Q2 ka answer chhota karo / har answer me diagram ka explanation do / C program comments ke saath" />
+          </label>
           <div className="grid gap-3 sm:grid-cols-2 text-sm">
             <label>ID card photo (page 2)<input type="file" accept="image/*" className="mt-1 block" onChange={(e) => readImages(e.target.files, setIdCard)} /></label>
             <label>Question paper photos (optional)<input type="file" accept="image/*" multiple className="mt-1 block" onChange={(e) => readImages(e.target.files, setQpImgs)} /></label>
