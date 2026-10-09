@@ -9,18 +9,16 @@ function strict(s: any): any {
   return s;
 }
 
-async function callAI(prompt: string, _name: string, schema: Record<string, unknown>) {
-  const key = process.env["GEMINI_API_KEY"];
-  if (!key) throw new Error("AI is not configured");
+const SYSTEM = "You are an expert IGNOU BCA examiner who knows 10+ years of IGNOU term-end exam papers. Be accurate and exam focused.";
+
+async function callGemini(key: string, prompt: string, schema: Record<string, unknown>) {
   const res = await fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
     {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: "You are an expert IGNOU BCA examiner who knows 10+ years of IGNOU term-end exam papers. Be accurate and exam focused." }],
-        },
+        systemInstruction: { parts: [{ text: SYSTEM }] },
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           responseMimeType: "application/json",
@@ -30,12 +28,51 @@ async function callAI(prompt: string, _name: string, schema: Record<string, unkn
       }),
     },
   );
-  if (res.status === 429) throw new Error("Free limit reached, please try again in a minute.");
-  if (!res.ok) throw new Error(`AI request failed (${res.status})`);
+  if (!res.ok) throw new Error(`Gemini failed (${res.status})`);
   const json: any = await res.json();
   const out = (json?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
-  if (!out) throw new Error("AI returned no result");
+  if (!out) throw new Error("Gemini returned no result");
   return JSON.parse(out);
+}
+
+async function callGrok(key: string, prompt: string, name: string, schema: Record<string, unknown>) {
+  const res = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: "grok-3-mini",
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_schema", json_schema: { name, strict: true, schema: strict(schema) } },
+    }),
+  });
+  if (!res.ok) throw new Error(`Grok failed (${res.status})`);
+  const json: any = await res.json();
+  const out = json?.choices?.[0]?.message?.content;
+  if (!out) throw new Error("Grok returned no result");
+  return JSON.parse(out);
+}
+
+// Tries each configured free provider in turn; on limit/error, switches to the next.
+async function callAI(prompt: string, name: string, schema: Record<string, unknown>) {
+  const providers: Array<() => Promise<any>> = [];
+  const g = process.env["GEMINI_API_KEY"];
+  const x = process.env["GROK_API_KEY"];
+  if (g) providers.push(() => callGemini(g, prompt, schema));
+  if (x) providers.push(() => callGrok(x, prompt, name, schema));
+  if (!providers.length) throw new Error("AI is not configured");
+  let last: unknown;
+  for (const p of providers) {
+    try {
+      return await p();
+    } catch (e) {
+      last = e;
+      console.error("AI provider failed, switching:", e);
+    }
+  }
+  throw new Error("Free AI limit reached on all providers, please try again in a minute.");
 }
 
 const subjectInput = z.object({
