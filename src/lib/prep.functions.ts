@@ -9,54 +9,31 @@ function strict(s: any): any {
   return s;
 }
 
-async function callAI(prompt: string, name: string, schema: Record<string, unknown>) {
-  const key = process.env["LOVABLE_API_KEY"];
+async function callAI(prompt: string, _name: string, schema: Record<string, unknown>) {
+  const key = process.env["GEMINI_API_KEY"];
   if (!key) throw new Error("AI is not configured");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-    method: "POST",
-    headers: {
-      "Lovable-API-Key": key,
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      "X-Lovable-AIG-SDK": "fetch",
+  const res = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: "You are an expert IGNOU BCA examiner who knows 10+ years of IGNOU term-end exam papers. Be accurate and exam focused." }],
+        },
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseJsonSchema: strict(schema),
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      }),
     },
-    body: JSON.stringify({
-      model: "openai/gpt-6-astra",
-      stream: true,
-      store: false,
-      reasoning: { effort: "low" },
-      instructions:
-        "You are an expert IGNOU BCA examiner who knows 10+ years of IGNOU term-end exam papers. Be accurate and exam focused.",
-      input: prompt,
-      text: { format: { type: "json_schema", name, strict: true, schema: strict(schema) } },
-    }),
-  });
-  if (res.status === 429) throw new Error("Too many requests, please try again in a minute.");
-  if (res.status === 402) throw new Error("AI credits exhausted. Please add credits.");
-  if (!res.ok || !res.body) throw new Error(`AI request failed (${res.status})`);
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = "";
-  let out = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const p = line.slice(5).trim();
-      if (!p || p === "[DONE]") continue;
-      try {
-        const ev = JSON.parse(p);
-        if (ev.type === "response.output_text.delta") out += ev.delta ?? "";
-        if (ev.type === "error" || ev.type === "response.failed") throw new Error("AI request failed");
-      } catch (e) {
-        if (e instanceof Error && e.message === "AI request failed") throw e;
-      }
-    }
-  }
+  );
+  if (res.status === 429) throw new Error("Free limit reached, please try again in a minute.");
+  if (!res.ok) throw new Error(`AI request failed (${res.status})`);
+  const json: any = await res.json();
+  const out = (json?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
   if (!out) throw new Error("AI returned no result");
   return JSON.parse(out);
 }
