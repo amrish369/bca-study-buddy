@@ -40,7 +40,7 @@ async function callGroq(key: string, prompt: string, _name: string, schema: Reco
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         { role: "system", content: `${SYSTEM} Reply ONLY with a JSON object matching this JSON schema: ${JSON.stringify(schema)}` },
         { role: "user", content: prompt },
