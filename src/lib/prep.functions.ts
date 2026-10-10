@@ -289,9 +289,9 @@ export const solveAssignmentQuestion = createServerFn({ method: "POST" })
     const r = await callAI(
       `Write a complete IGNOU BCA assignment answer for ${data.courseCode} ${data.title}.
 Question (${data.marks} marks): ${data.question}
-Write about ${words} words in simple English, the way a good student writes by hand: short Introduction, clear headings on their own line, "- " bullet points, step-by-step working for maths, full code with comments for programs, a small text diagram/table if useful, and a short Conclusion. Plain text only, no markdown symbols like ** or #.${data.instructions?.trim() ? `\nIMPORTANT extra instructions from the student (follow these over the defaults): ${data.instructions}` : ""}`,
+Write about ${words} words in simple English, the way a good student writes by hand: short Introduction, clear headings on their own line, "- " bullet points, step-by-step working for maths, full code with comments for programs, a small text diagram/table if useful, and a short Conclusion. Put every heading, bullet, step and code line on its own new line using \\n line breaks, with a blank line between sections. Plain text only, no markdown symbols like ** or #.${data.instructions?.trim() ? `\nIMPORTANT extra instructions from the student (follow these over the defaults): ${data.instructions}` : ""}`,
       "assignment_answer",
       { type: "object", properties: { answer: { type: "string" } }, required: ["answer"] },
     );
-    return { answer: String(r.answer ?? "") };
+    return { answer: String(r.answer ?? "").replace(/\s+-\s(?=[A-Z0-9])/g, "\n- ").replace(/\s*(Introduction|Conclusion|Definition)\s*:?\s+/g, "\n\n$1:\n").trim() };
   });
