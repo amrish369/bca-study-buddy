@@ -11,9 +11,9 @@ function strict(s: any): any {
 
 const SYSTEM = "You are an expert IGNOU BCA examiner who knows 10+ years of IGNOU term-end exam papers. Be accurate and exam focused.";
 
-async function callGemini(key: string, prompt: string, schema: Record<string, unknown>) {
+async function callGemini(key: string, prompt: string, schema: Record<string, unknown>, model = "gemini-3-flash-preview") {
   const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -23,7 +23,6 @@ async function callGemini(key: string, prompt: string, schema: Record<string, un
         generationConfig: {
           responseMimeType: "application/json",
           responseJsonSchema: strict(schema),
-          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     },
@@ -38,7 +37,7 @@ async function callGemini(key: string, prompt: string, schema: Record<string, un
 async function callGroq(key: string, prompt: string, _name: string, schema: Record<string, unknown>) {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, "User-Agent": "curl/8.0" },
     body: JSON.stringify({
       model: "openai/gpt-oss-120b",
       messages: [
@@ -63,15 +62,17 @@ async function callAI(prompt: string, name: string, schema: Record<string, unkno
   const q = process.env["GROQ_API_KEY"] || (gk?.startsWith("gsk_") ? gk : undefined);
   if (g) providers.push(() => callGemini(g, prompt, schema));
   if (q) providers.push(() => callGroq(q, prompt, name, schema));
+  if (g) providers.push(() => callGemini(g, prompt, schema, "gemini-flash-lite-latest"));
   if (!providers.length) throw new Error("AI is not configured");
-  let last: unknown;
-  for (const p of providers) {
-    try {
-      return await p();
-    } catch (e) {
-      last = e;
-      console.error("AI provider failed, switching:", e);
+  for (let round = 0; round < 2; round++) {
+    for (const p of providers) {
+      try {
+        return await p();
+      } catch (e) {
+        console.error("AI provider failed, switching:", e);
+      }
     }
+    await new Promise((r) => setTimeout(r, 6000));
   }
   throw new Error("Free AI limit reached on all providers, please try again in a minute.");
 }
@@ -259,4 +260,38 @@ For every question give the question number, full question text, marks, and a co
       },
     );
     return { answers: (r.answers ?? []) as AssignmentAnswer[] };
+  });
+
+export const listAssignmentQuestions = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ courseCode: z.string().min(2).max(20), title: z.string().min(2).max(200), session: z.string().max(20), questionsText: z.string().max(8000) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await callAI(
+      `${data.questionsText.trim() ? `Split these IGNOU assignment questions of ${data.courseCode} ${data.title} into a clean list, keep the exact wording and marks:\n${data.questionsText}` : `Write the typical official IGNOU assignment questions for ${data.courseCode} ${data.title}, session ${data.session} (4-8 questions, total 100 marks).`}
+Return only question number, full question text and marks. Do not answer.`,
+      "assignment_questions",
+      {
+        type: "object",
+        properties: { questions: { type: "array", items: { type: "object", properties: { qno: { type: "string" }, question: { type: "string" }, marks: { type: "number" } }, required: ["qno", "question", "marks"] } } },
+        required: ["questions"],
+      },
+    );
+    return { questions: (r.questions ?? []) as Array<{ qno: string; question: string; marks: number }> };
+  });
+
+export const solveAssignmentQuestion = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ courseCode: z.string().min(2).max(20), title: z.string().min(2).max(200), question: z.string().min(2).max(3000), marks: z.number().min(1).max(100), instructions: z.string().max(2000).optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const words = Math.min(900, Math.max(150, data.marks * 35));
+    const r = await callAI(
+      `Write a complete IGNOU BCA assignment answer for ${data.courseCode} ${data.title}.
+Question (${data.marks} marks): ${data.question}
+Write about ${words} words in simple English, the way a good student writes by hand: short Introduction, clear headings on their own line, "- " bullet points, step-by-step working for maths, full code with comments for programs, a small text diagram/table if useful, and a short Conclusion. Plain text only, no markdown symbols like ** or #.${data.instructions?.trim() ? `\nIMPORTANT extra instructions from the student (follow these over the defaults): ${data.instructions}` : ""}`,
+      "assignment_answer",
+      { type: "object", properties: { answer: { type: "string" } }, required: ["answer"] },
+    );
+    return { answer: String(r.answer ?? "") };
   });
