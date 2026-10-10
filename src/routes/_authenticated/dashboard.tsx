@@ -292,6 +292,8 @@ function DashboardPage() {
           </p>
         )}
 
+        <div className="mb-8"><SavedAssignments /></div>
+
         {/* Controls */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
