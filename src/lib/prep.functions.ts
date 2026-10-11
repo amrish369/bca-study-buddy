@@ -322,3 +322,20 @@ export const readQuestionImages = createServerFn({ method: "POST" })
     }
     throw new Error(lastErr || "Image read failed");
   });
+
+export const getPaperQuestions = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ courseCode: z.string().min(2).max(20), year: z.number().min(2005).max(2035), session: z.string().max(20) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await callAI(
+      `List the questions of the IGNOU BCA term-end exam paper ${data.courseCode}, ${data.session} ${data.year}, as accurately as you can recall it (Section/Q number, full question text, marks). If unsure, give the most likely IGNOU-pattern questions for that session. Total 100 marks. Do not answer.`,
+      "paper_questions",
+      {
+        type: "object",
+        properties: { questions: { type: "array", items: { type: "object", properties: { qno: { type: "string" }, question: { type: "string" }, marks: { type: "number" } }, required: ["qno", "question", "marks"] } } },
+        required: ["questions"],
+      },
+    );
+    return { questions: (r.questions ?? []) as Array<{ qno: string; question: string; marks: number }> };
+  });
