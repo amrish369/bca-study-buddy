@@ -72,9 +72,36 @@ const ruled: React.CSSProperties = {
   lineHeight: "9mm",
 };
 
+function compressImage(f: File, max = 1600): Promise<string> {
+  return new Promise((res) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const src = String(r.result);
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        const ctx = c.getContext("2d");
+        if (!ctx) return res(src);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => res(src);
+      img.src = src;
+    };
+    r.readAsDataURL(f);
+  });
+}
+
 function readImages(files: FileList | null, cb: (urls: string[]) => void) {
   if (!files) return;
-  Promise.all(Array.from(files).map((f) => new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(f); }))).then(cb);
+  Promise.all(Array.from(files).map((f) => compressImage(f))).then(cb);
+}
+
+function countQuestions(t: string) {
+  const m = t.match(/^\s*(?:Q\.?\s*)?\d+[.)]/gim);
+  return m ? m.length : 0;
 }
 
 function MakerPage() {
@@ -116,6 +143,8 @@ function MakerPage() {
 
   async function run() {
     if (!subject) return;
+    if (reading) { toast.error("Photo abhi padhi ja rahi hai, thoda ruko"); return; }
+    if (qpImgs.length && !qText.trim()) { toast.error("Photo se questions nahi padhe gaye — dobara photo daalo ya questions box me likho"); return; }
     setLoading(true); setAnswers(null); setEditing(false);
     const sid = crypto.randomUUID(); setSavedId(sid);
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -199,13 +228,20 @@ function MakerPage() {
               setQpImgs(urls);
               if (!urls.length) return;
               setReading(true);
-              try { const r = await readImgs({ data: { images: urls.slice(0, 6) } }); setQText(r.text); toast.success("Photo se saare questions padh liye — neeche box me check karo"); }
+              setQText("");
+              try { const r = await readImgs({ data: { images: urls.slice(0, 6) } }); setQText(r.text); toast.success(`फ़ोटो से कुल ${countQuestions(r.text) || "सभी"} सवाल पढ़े गए`); }
               catch (err) { toast.error(err instanceof Error ? err.message : "Photo read nahi hui"); }
               finally { setReading(false); }
             })} />{reading && <span className="mt-1 flex items-center gap-1 text-primary"><Loader2 className="h-3 w-3 animate-spin" /> Photo padhi ja rahi hai…</span>}</label>
           </div>
+          {qpImgs.length > 0 && !reading && qText.trim() && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+              <p className="font-semibold text-primary">✓ फ़ोटो से कुल {countQuestions(qText) || "सभी"} सवाल पढ़े गए — सिर्फ़ इन्हीं का answer लिखा जाएगा</p>
+              <p className="mt-1 text-xs text-muted-foreground">Upar box me check/edit kar sakte ho.</p>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={run} disabled={loading}>{loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Likha ja raha hai…</> : <><Sparkles className="h-4 w-4" /> Assignment solve karo</>}</Button>
+            <Button onClick={run} disabled={loading || reading}>{loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Likha ja raha hai…</> : <><Sparkles className="h-4 w-4" /> Assignment solve karo</>}</Button>
             {answers && <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" /> Download PDF</Button>}
             {answers && !loading && <Button variant="outline" onClick={() => { if (editing && savedId) { persist(answers, "completed", savedId); toast.success("Save ho gaya"); } setEditing(!editing); }}>
               {editing ? <><Check className="h-4 w-4" /> Save edits</> : <><Pencil className="h-4 w-4" /> Edit answers</>}</Button>}

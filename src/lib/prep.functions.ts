@@ -268,7 +268,7 @@ export const listAssignmentQuestions = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const r = await callAI(
-      `${data.questionsText.trim() ? `Split these IGNOU assignment questions of ${data.courseCode} ${data.title} into a clean list, keep the exact wording and marks:\n${data.questionsText}` : `Write the typical official IGNOU assignment questions for ${data.courseCode} ${data.title}, session ${data.session} (4-8 questions, total 100 marks).`}
+      `${data.questionsText.trim() ? `Split ONLY these given IGNOU assignment questions of ${data.courseCode} ${data.title} into a clean list. Keep the exact wording, sub-parts and marks. Do NOT add, remove, invent or replace any question. If marks are missing, distribute 100 marks sensibly:\n${data.questionsText}` : `Write the typical official IGNOU assignment questions for ${data.courseCode} ${data.title}, session ${data.session} (4-8 questions, total 100 marks).`}
 Return only question number, full question text and marks. Do not answer.`,
       "assignment_questions",
       {
