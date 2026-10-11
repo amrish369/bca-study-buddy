@@ -295,3 +295,30 @@ Write about ${words} words in simple English, the way a good student writes by h
     );
     return { answer: String(r.answer ?? "").replace(/\s+-\s(?=[A-Z0-9])/g, "\n- ").replace(/\s*(Introduction|Conclusion|Definition)\s*:?\s+/g, "\n\n$1:\n").trim() };
   });
+
+// Reads uploaded question-paper photos with Gemini vision and returns the full text.
+export const readQuestionImages = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ images: z.array(z.string().max(8_000_000)).min(1).max(6) }).parse(d))
+  .handler(async ({ data }) => {
+    const key = process.env["GEMINI_API_KEY"];
+    if (!key) throw new Error("Gemini key missing");
+    const parts: any[] = [{ text: "These are photos of an IGNOU assignment/question paper. Read EVERYTHING and transcribe all questions exactly, in order, with question numbers, sub-parts (a), (b) and marks. Include course code and instructions if visible. Plain text only." }];
+    for (const url of data.images) {
+      const m = /^data:([^;]+);base64,(.+)$/.exec(url);
+      if (m) parts.push({ inline_data: { mime_type: m[1], data: m[2] } });
+    }
+    let lastErr = "";
+    for (const model of ["gemini-3-flash-preview", "gemini-flash-lite-latest"]) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ contents: [{ role: "user", parts }] }),
+      });
+      if (!res.ok) { lastErr = `Image read failed (${res.status})`; continue; }
+      const json: any = await res.json();
+      const text = (json?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("").trim();
+      if (text) return { text };
+      lastErr = "Image se text nahi mila";
+    }
+    throw new Error(lastErr || "Image read failed");
+  });
