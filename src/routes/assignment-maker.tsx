@@ -7,7 +7,7 @@ import { SiteLayout } from "@/components/layout/SiteLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { semesters, subjectsBySemester, findSubject, currentAssignmentSession } from "@/lib/data";
-import { listAssignmentQuestions, solveAssignmentQuestion, type AssignmentAnswer } from "@/lib/prep.functions";
+import { listAssignmentQuestions, solveAssignmentQuestion, readQuestionImages, type AssignmentAnswer } from "@/lib/prep.functions";
 import { getSaved, upsertSaved, type HandStyle } from "@/lib/savedAssignments";
 import { SavedAssignments } from "@/components/SavedAssignments";
 import { z } from "zod";
@@ -94,6 +94,8 @@ function MakerPage() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const listQs = useServerFn(listAssignmentQuestions);
   const solveQ = useServerFn(solveAssignmentQuestion);
+  const readImgs = useServerFn(readQuestionImages);
+  const [reading, setReading] = useState(false);
   const subject = findSubject(course);
   const { id } = Route.useSearch();
 
@@ -193,7 +195,14 @@ function MakerPage() {
           </label>
           <div className="grid gap-3 sm:grid-cols-2 text-sm">
             <label>ID card photo (page 2)<input type="file" accept="image/*" className="mt-1 block" onChange={(e) => readImages(e.target.files, setIdCard)} /></label>
-            <label>Question paper photos (optional)<input type="file" accept="image/*" multiple className="mt-1 block" onChange={(e) => readImages(e.target.files, setQpImgs)} /></label>
+            <label>Question paper photos (AI pura padh lega)<input type="file" accept="image/*" multiple className="mt-1 block" onChange={(e) => readImages(e.target.files, async (urls) => {
+              setQpImgs(urls);
+              if (!urls.length) return;
+              setReading(true);
+              try { const r = await readImgs({ data: { images: urls.slice(0, 6) } }); setQText(r.text); toast.success("Photo se saare questions padh liye — neeche box me check karo"); }
+              catch (err) { toast.error(err instanceof Error ? err.message : "Photo read nahi hui"); }
+              finally { setReading(false); }
+            })} />{reading && <span className="mt-1 flex items-center gap-1 text-primary"><Loader2 className="h-3 w-3 animate-spin" /> Photo padhi ja rahi hai…</span>}</label>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={run} disabled={loading}>{loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Likha ja raha hai…</> : <><Sparkles className="h-4 w-4" /> Assignment solve karo</>}</Button>
