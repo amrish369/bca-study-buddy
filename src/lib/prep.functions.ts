@@ -268,7 +268,7 @@ export const listAssignmentQuestions = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const r = await callAI(
-      `${data.questionsText.trim() ? `Split these IGNOU assignment questions of ${data.courseCode} ${data.title} into a clean list, keep the exact wording and marks:\n${data.questionsText}` : `Write the typical official IGNOU assignment questions for ${data.courseCode} ${data.title}, session ${data.session} (4-8 questions, total 100 marks).`}
+      `${data.questionsText.trim() ? `Split ONLY these given IGNOU assignment questions of ${data.courseCode} ${data.title} into a clean list. Keep the exact wording, sub-parts and marks. Do NOT add, remove, invent or replace any question. If marks are missing, distribute 100 marks sensibly:\n${data.questionsText}` : `Write the typical official IGNOU assignment questions for ${data.courseCode} ${data.title}, session ${data.session} (4-8 questions, total 100 marks).`}
 Return only question number, full question text and marks. Do not answer.`,
       "assignment_questions",
       {
@@ -321,4 +321,21 @@ export const readQuestionImages = createServerFn({ method: "POST" })
       lastErr = "Image se text nahi mila";
     }
     throw new Error(lastErr || "Image read failed");
+  });
+
+export const getPaperQuestions = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ courseCode: z.string().min(2).max(20), year: z.number().min(2005).max(2035), session: z.string().max(20) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await callAI(
+      `List the questions of the IGNOU BCA term-end exam paper ${data.courseCode}, ${data.session} ${data.year}, as accurately as you can recall it (Section/Q number, full question text, marks). If unsure, give the most likely IGNOU-pattern questions for that session. Total 100 marks. Do not answer.`,
+      "paper_questions",
+      {
+        type: "object",
+        properties: { questions: { type: "array", items: { type: "object", properties: { qno: { type: "string" }, question: { type: "string" }, marks: { type: "number" } }, required: ["qno", "question", "marks"] } } },
+        required: ["questions"],
+      },
+    );
+    return { questions: (r.questions ?? []) as Array<{ qno: string; question: string; marks: number }> };
   });

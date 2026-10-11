@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { semesters, subjectsBySemester, papersForCourse } from "@/lib/data";
 import { StudyVideos } from "@/components/StudyVideos";
 import { getPaperUrl } from "@/lib/papers.functions";
+import { PaperSolution } from "@/components/PaperSolution";
 
 
 export const Route = createFileRoute("/papers")({
@@ -68,7 +69,7 @@ function PaperRow({
   }
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2">
       <span className="text-sm font-medium">
         {session} {year}
       </span>
@@ -93,6 +94,7 @@ function PaperRow({
           PDF
         </Button>
       </div>
+      <PaperSolution courseCode={courseCode} year={year} session={session} />
     </div>
   );
 }
