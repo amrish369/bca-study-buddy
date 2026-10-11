@@ -59,9 +59,9 @@ export function SubjectAnalysis() {
               <div className="mt-2 flex flex-wrap gap-1">
                 {[...t.years].sort((a, b) => b - a).map((y) => <span key={y} className="rounded bg-success/15 px-2 py-0.5 text-xs text-success">{y}</span>)}
               </div>
-              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">
-                {t.expectedQuestions.map((q) => <li key={q}>{q}</li>)}
-              </ul>
+              <div className="mt-3 space-y-2">
+                {t.expectedQuestions.map((q, i) => <QA key={q} n={i + 1} q={q} marks={t.marks} course={course} />)}
+              </div>
               <Button asChild size="sm" variant="outline" className="mt-3">
                 <Link to="/quiz" search={{ course, focus: t.topic }}><Brain className="h-4 w-4" /> Is topic ka quiz do</Link>
               </Button>
