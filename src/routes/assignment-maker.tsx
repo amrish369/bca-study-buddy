@@ -7,7 +7,7 @@ import { SiteLayout } from "@/components/layout/SiteLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { semesters, subjectsBySemester, findSubject, currentAssignmentSession } from "@/lib/data";
-import { listAssignmentQuestions, solveAssignmentQuestion, readQuestionImages, type AssignmentAnswer } from "@/lib/prep.functions";
+import { listAssignmentQuestions, solveAssignmentQuestion, readQuestionImages, getAssignmentPaper, type AssignmentAnswer } from "@/lib/prep.functions";
 import { getSaved, upsertSaved, type HandStyle } from "@/lib/savedAssignments";
 import { SavedAssignments } from "@/components/SavedAssignments";
 import { z } from "zod";
@@ -123,6 +123,23 @@ function MakerPage() {
   const solveQ = useServerFn(solveAssignmentQuestion);
   const readImgs = useServerFn(readQuestionImages);
   const [reading, setReading] = useState(false);
+  const fetchPaper = useServerFn(getAssignmentPaper);
+  const [official, setOfficial] = useState<null | { found: boolean; pdfUrl: string | null; questions: { qno: string; question: string; marks: number }[] }>(null);
+  const [fetching, setFetching] = useState(false);
+
+  async function findOfficial() {
+    if (!subject) return;
+    setFetching(true); setOfficial(null);
+    try { setOfficial(await fetchPaper({ data: { courseCode: subject.courseCode, session: currentAssignmentSession } })); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Paper fetch nahi hua"); }
+    finally { setFetching(false); }
+  }
+  function approveOfficial() {
+    if (!official?.found) return;
+    const text = official.questions.map((q) => `Q${q.qno}. ${q.question} (${q.marks} marks)`).join("\n\n");
+    setQText(text); setOfficial(null);
+    void run(text);
+  }
   const subject = findSubject(course);
   const { id } = Route.useSearch();
 
@@ -141,16 +158,18 @@ function MakerPage() {
   useEffect(() => { try { const s = localStorage.getItem(KEY); if (s) setD({ ...emptyDetails, ...JSON.parse(s) }); } catch { /* ignore */ } }, []);
   useEffect(() => { localStorage.setItem(KEY, JSON.stringify(d)); }, [d]);
 
-  async function run() {
+  async function run(override?: string) {
     if (!subject) return;
+    const qt = override ?? qText;
+    if (!qt.trim() && !qpImgs.length) { await findOfficial(); return; }
     if (reading) { toast.error("Photo abhi padhi ja rahi hai, thoda ruko"); return; }
-    if (qpImgs.length && !qText.trim()) { toast.error("Photo se questions nahi padhe gaye — dobara photo daalo ya questions box me likho"); return; }
+    if (qpImgs.length && !qt.trim()) { toast.error("Photo se questions nahi padhe gaye — dobara photo daalo ya questions box me likho"); return; }
     setLoading(true); setAnswers(null); setEditing(false);
     const sid = crypto.randomUUID(); setSavedId(sid);
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
     try {
       setProgress("Questions nikale ja rahe hain…");
-      const { questions } = await listQs({ data: { courseCode: subject.courseCode, title: subject.title, session: currentAssignmentSession, questionsText: qText } });
+      const { questions } = await listQs({ data: { courseCode: subject.courseCode, title: subject.title, session: currentAssignmentSession, questionsText: qt } });
       if (!questions.length) throw new Error("Questions nahi mile, dobara try karo");
       const done: AssignmentAnswer[] = [];
       for (let i = 0; i < questions.length; i++) {
@@ -216,7 +235,7 @@ function MakerPage() {
             </select>
           </div>
           <textarea className="w-full rounded-lg border border-input bg-background p-2 text-sm" rows={5} value={qText} onChange={(e) => setQText(e.target.value)}
-            placeholder="Assignment ke questions yahan paste karo (best result). Khali chhodoge to AI typical IGNOU questions khud lega." />
+            placeholder="Assignment ke questions yahan paste karo. Khali chhodoge to IGNOU website se is session ka original assignment paper laaya jayega." />
           <label className="block text-sm">
             <span className="text-muted-foreground">Instructions (optional) — AI ko batao kya badlav chahiye</span>
             <textarea className="mt-1 w-full rounded-lg border border-input bg-background p-2 text-sm" rows={3} value={instr} onChange={(e) => setInstr(e.target.value)}
@@ -240,8 +259,32 @@ function MakerPage() {
               <p className="mt-1 text-xs text-muted-foreground">Upar box me check/edit kar sakte ho.</p>
             </div>
           )}
+          {official?.found && (
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm space-y-2">
+              <p className="font-semibold text-primary">✓ IGNOU website par original assignment mila ({currentAssignmentSession}) — {official.questions.length} सवाल</p>
+              {official.pdfUrl && <a href={official.pdfUrl} target="_blank" rel="noreferrer" className="text-xs underline">Original PDF kholo</a>}
+              <ol className="max-h-72 space-y-1 overflow-auto rounded border border-border bg-background p-2">
+                {official.questions.map((q, i) => <li key={i}><b>Q{q.qno}.</b> {q.question} <span className="text-muted-foreground">({q.marks} marks)</span></li>)}
+              </ol>
+              <p className="text-xs text-muted-foreground">Ye sahi hain? Approve karne ke baad hi likhna shuru hoga.</p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={approveOfficial}><Check className="h-4 w-4" /> Haan, inhe solve karo</Button>
+                <Button size="sm" variant="outline" onClick={() => { setQText(official.questions.map((q) => `Q${q.qno}. ${q.question} (${q.marks} marks)`).join("\n\n")); setOfficial(null); }}><Pencil className="h-4 w-4" /> Pehle edit karunga</Button>
+              </div>
+            </div>
+          )}
+          {official && !official.found && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-1">
+              <p className="font-semibold text-destructive">Is session ({currentAssignmentSession}) ka original assignment paper abhi IGNOU website par nahi mila.</p>
+              <p className="text-xs text-muted-foreground">Koi bhi sawaal khud se nahi banaya gaya. Apne LMS / IGNOU portal se paper download karke uski photo upar daalo ya questions box me paste karo.</p>
+              <div className="flex flex-wrap gap-3 text-xs">
+                <a className="underline" href="https://webservices.ignou.ac.in/assignments/" target="_blank" rel="noreferrer">IGNOU Assignment Portal</a>
+                <a className="underline" href="https://lms.ignou.ac.in/" target="_blank" rel="noreferrer">IGNOU LMS login</a>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={run} disabled={loading || reading}>{loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Likha ja raha hai…</> : <><Sparkles className="h-4 w-4" /> Assignment solve karo</>}</Button>
+            <Button onClick={() => run()} disabled={loading || reading || fetching}>{fetching ? <><Loader2 className="h-4 w-4 animate-spin" /> Original paper dhoonda ja raha hai…</> : null}{fetching ? null : loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Likha ja raha hai…</> : <><Sparkles className="h-4 w-4" /> Assignment solve karo</>}</Button>
             {answers && <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" /> Download PDF</Button>}
             {answers && !loading && <Button variant="outline" onClick={() => { if (editing && savedId) { persist(answers, "completed", savedId); toast.success("Save ho gaya"); } setEditing(!editing); }}>
               {editing ? <><Check className="h-4 w-4" /> Save edits</> : <><Pencil className="h-4 w-4" /> Edit answers</>}</Button>}
