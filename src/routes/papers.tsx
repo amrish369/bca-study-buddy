@@ -103,6 +103,14 @@ function PapersPage() {
 
   const [sem, setSem] = useState(1);
   const [query, setQuery] = useState("");
+  const [range, setRange] = useState<[number, number]>([2025, 2021]);
+  const ranges: Array<{ label: string; r: [number, number] }> = [
+    { label: "2021–2025", r: [2025, 2021] },
+    { label: "Last 10 yrs", r: [2025, 2016] },
+    { label: "2010–2015", r: [2015, 2010] },
+    { label: "2005–2009", r: [2009, 2005] },
+    { label: "All 20 yrs", r: [2025, 2005] },
+  ];
 
   const subjects = useMemo(() => {
     const list = subjectsBySemester(sem);
@@ -149,6 +157,18 @@ function PapersPage() {
           </div>
         </div>
 
+        <div className="mt-4 flex flex-wrap gap-2">
+          {ranges.map((x) => (
+            <button
+              key={x.label}
+              onClick={() => setRange(x.r)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${range[0] === x.r[0] && range[1] === x.r[1] ? "bg-secondary text-secondary-foreground ring-2 ring-primary" : "border border-border bg-card text-muted-foreground"}`}
+            >
+              {x.label}
+            </button>
+          ))}
+        </div>
+
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
           {subjects.map((s) => {
             const list = papersForCourse(s.courseCode);
@@ -163,8 +183,8 @@ function PapersPage() {
                   <FileText className="h-6 w-6 shrink-0 text-primary" />
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  {list.slice(0, 4).map((p) => (
+                <div className="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+                  {list.filter((p) => p.year <= range[0] && p.year >= range[1]).map((p) => (
                     <PaperRow
                       key={p.year + p.session}
                       courseCode={s.courseCode}
