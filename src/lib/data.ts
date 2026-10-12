@@ -140,7 +140,8 @@ export const subjects: Subject[] = [...newBcaSubjects, ...oldBcaSubjects];
 
 export const defaultProgramme: Programme = "BCA_NEWOL";
 
-const yearsRange = [2025, 2024, 2023, 2022, 2021];
+// Last 20 years of June/December term-end exam sessions.
+const yearsRange = Array.from({ length: 21 }, (_, i) => 2025 - i);
 export const papers: Paper[] = subjects.flatMap((s) =>
   yearsRange.flatMap((year) =>
     (["June", "December"] as Session[]).map((session) => ({

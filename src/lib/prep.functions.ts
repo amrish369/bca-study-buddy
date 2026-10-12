@@ -323,19 +323,48 @@ export const readQuestionImages = createServerFn({ method: "POST" })
     throw new Error(lastErr || "Image read failed");
   });
 
+// Downloads the ORIGINAL IGNOU question paper PDF and reads its real questions (no invented questions).
 export const getPaperQuestions = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z.object({ courseCode: z.string().min(2).max(20), year: z.number().min(2005).max(2035), session: z.string().max(20) }).parse(d),
+    z.object({ courseCode: z.string().min(2).max(20), year: z.number().min(2005).max(2035), session: z.enum(["June", "December"]) }).parse(d),
   )
   .handler(async ({ data }) => {
-    const r = await callAI(
-      `List the questions of the IGNOU BCA term-end exam paper ${data.courseCode}, ${data.session} ${data.year}, as accurately as you can recall it (Section/Q number, full question text, marks). If unsure, give the most likely IGNOU-pattern questions for that session. Total 100 marks. Do not answer.`,
-      "paper_questions",
-      {
-        type: "object",
-        properties: { questions: { type: "array", items: { type: "object", properties: { qno: { type: "string" }, question: { type: "string" }, marks: { type: "number" } }, required: ["qno", "question", "marks"] } } },
-        required: ["questions"],
-      },
-    );
-    return { questions: (r.questions ?? []) as Array<{ qno: string; question: string; marks: number }> };
+    type PQ = { qno: string; question: string; marks: number };
+    const { resolvePaper } = await import("./papers.server");
+    const paper = await resolvePaper(data.courseCode, data.year, data.session);
+    if (!paper.pdfUrl) return { found: false as const, pdfUrl: null, questions: [] as PQ[] };
+    const pdfRes = await fetch(paper.pdfUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
+    if (!pdfRes.ok) return { found: false as const, pdfUrl: paper.pdfUrl, questions: [] as PQ[] };
+    const buf = new Uint8Array(await pdfRes.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+    const b64 = btoa(bin);
+    const key = process.env["GEMINI_API_KEY"];
+    if (!key) throw new Error("Gemini key missing");
+    const schema = { type: "object", properties: { questions: { type: "array", items: { type: "object", properties: { qno: { type: "string" }, question: { type: "string" }, marks: { type: "number" } }, required: ["qno", "question", "marks"] } } }, required: ["questions"] };
+    let lastErr = "";
+    for (let round = 0; round < 2; round++) {
+      for (const model of ["gemini-3-flash-preview", "gemini-flash-lite-latest"]) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [
+              { inline_data: { mime_type: "application/pdf", data: b64 } },
+              { text: "This is an original IGNOU term-end exam question paper. Transcribe EVERY question exactly as printed, in order, one item per question or sub-part (e.g. 1(a), 1(b), 2). Keep exact wording, include marks for each. Write maths in plain text (no LaTeX). Do NOT add, skip, invent or answer anything. If the paper is bilingual, use only the English version." },
+            ] }],
+            generationConfig: { responseMimeType: "application/json", responseJsonSchema: strict(schema) },
+          }),
+        });
+        if (!res.ok) { lastErr = `PDF read failed (${res.status})`; continue; }
+        const json: any = await res.json();
+        const out = (json?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
+        try {
+          const qs = (JSON.parse(out).questions ?? []) as PQ[];
+          if (qs.length) return { found: true as const, pdfUrl: paper.pdfUrl, questions: qs };
+        } catch { lastErr = "PDF se questions nahi padhe gaye"; }
+      }
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+    throw new Error(lastErr || "PDF read failed, thodi der baad try karo");
   });
