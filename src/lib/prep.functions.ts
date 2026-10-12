@@ -368,3 +368,45 @@ export const getPaperQuestions = createServerFn({ method: "POST" })
     }
     throw new Error(lastErr || "PDF read failed, thodi der baad try karo");
   });
+
+// Fetches the ORIGINAL IGNOU assignment PDF for the current session and reads its real questions.
+export const getAssignmentPaper = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ courseCode: z.string().min(2).max(20), session: z.string().min(4).max(12) }).parse(d))
+  .handler(async ({ data }) => {
+    type PQ = { qno: string; question: string; marks: number };
+    const { resolveAssignment } = await import("./assignments.server");
+    const r = await resolveAssignment(data.courseCode, data.session, "question");
+    if (!r.pdfUrl) return { found: false as const, pdfUrl: null, questions: [] as PQ[] };
+    const pdfRes = await fetch(r.pdfUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
+    if (!pdfRes.ok) return { found: false as const, pdfUrl: r.pdfUrl, questions: [] as PQ[] };
+    const buf = new Uint8Array(await pdfRes.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+    const b64 = btoa(bin);
+    const key = process.env["GEMINI_API_KEY"];
+    if (!key) throw new Error("Gemini key missing");
+    const schema = { type: "object", properties: { questions: { type: "array", items: { type: "object", properties: { qno: { type: "string" }, question: { type: "string" }, marks: { type: "number" } }, required: ["qno", "question", "marks"] } } }, required: ["questions"] };
+    const prompt = `This is the original IGNOU assignment PDF which may contain several courses. Transcribe EVERY question of course ${data.courseCode} only, exactly as printed, in order, one item per question or sub-part (e.g. 1(a), 1(b), 2). Keep exact wording and marks. Plain-text maths, no LaTeX. Skip cover/instruction pages. Do NOT add, skip, invent or answer anything. If bilingual, use English only.`;
+    let lastErr = "";
+    for (let round = 0; round < 2; round++) {
+      for (const model of ["gemini-3-flash-preview", "gemini-flash-lite-latest"]) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ inline_data: { mime_type: "application/pdf", data: b64 } }, { text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json", responseJsonSchema: strict(schema) },
+          }),
+        });
+        if (!res.ok) { lastErr = `PDF read failed (${res.status})`; continue; }
+        const json: any = await res.json();
+        const out = (json?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
+        try {
+          const qs = (JSON.parse(out).questions ?? []) as PQ[];
+          if (qs.length) return { found: true as const, pdfUrl: r.pdfUrl, questions: qs };
+        } catch { lastErr = "PDF se questions nahi padhe gaye"; }
+      }
+      await new Promise((res) => setTimeout(res, 5000));
+    }
+    throw new Error(lastErr || "PDF read failed, thodi der baad try karo");
+  });
