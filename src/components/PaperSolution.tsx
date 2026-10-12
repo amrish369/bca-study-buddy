@@ -7,17 +7,21 @@ import { getPaperQuestions, solveAssignmentQuestion } from "@/lib/prep.functions
 
 type Q = { qno: string; question: string; marks: number; answer?: string; loading?: boolean };
 
-export function PaperSolution({ courseCode, year, session }: { courseCode: string; year: number; session: string }) {
+export function PaperSolution({ courseCode, year, session }: { courseCode: string; year: number; session: "June" | "December" }) {
   const getQs = useServerFn(getPaperQuestions);
   const solve = useServerFn(solveAssignmentQuestion);
   const [qs, setQs] = useState<Q[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [missing, setMissing] = useState(false);
 
   async function load() {
     setBusy(true);
+    setMissing(false);
     try {
-      const { questions } = await getQs({ data: { courseCode, year, session } });
-      setQs(questions);
+      const r = await getQs({ data: { courseCode, year, session } });
+      if (!r.found) { setMissing(true); toast.error("Original paper IGNOU server par nahi mila"); return; }
+      setQs(r.questions);
+      toast.success(`Original PDF se ${r.questions.length} questions padhe gaye`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Solution nahi mila"); }
     finally { setBusy(false); }
   }
@@ -37,16 +41,19 @@ export function PaperSolution({ courseCode, year, session }: { courseCode: strin
 
   if (!qs) {
     return (
-      <Button size="sm" variant="secondary" className="h-8" onClick={load} disabled={busy}>
-        {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
-        Full AI Solution
-      </Button>
+      <div className="w-full">
+        <Button size="sm" variant="secondary" className="h-8" onClick={load} disabled={busy}>
+          {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
+          {busy ? "Original PDF padh rahe hain…" : "Full AI Solution"}
+        </Button>
+        {missing && <p className="mt-1 text-xs text-muted-foreground">Yeh original paper IGNOU ke server par uplabdh nahi hai.</p>}
+      </div>
     );
   }
 
   return (
     <div className="mt-2 w-full space-y-2">
-      <p className="text-xs text-muted-foreground">AI se bana hal — official IGNOU paper se mila lein.</p>
+      <p className="text-xs text-muted-foreground">Questions original IGNOU PDF se liye gaye. Answers AI se bane hain — ek baar check kar lein.</p>
       {qs.map((q, i) => (
         <div key={i} className="rounded-lg border border-border bg-card p-3 text-sm">
           <p className="font-semibold">Q{q.qno}. {q.question} <span className="text-xs text-muted-foreground">({q.marks} marks)</span></p>

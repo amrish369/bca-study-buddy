@@ -163,8 +163,8 @@ function PapersPage() {
                   <FileText className="h-6 w-6 shrink-0 text-primary" />
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  {list.slice(0, 4).map((p) => (
+                <div className="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+                  {list.filter((p) => p.year <= range[0] && p.year >= range[1]).map((p) => (
                     <PaperRow
                       key={p.year + p.session}
                       courseCode={s.courseCode}
