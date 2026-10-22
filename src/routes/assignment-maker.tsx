@@ -67,7 +67,7 @@ function HandText({ text, style, ink, seed }: { text: string; style: HandStyle; 
 }
 const ruled: React.CSSProperties = {
   backgroundColor: "#ffffff",
-  backgroundImage: "linear-gradient(to right, transparent 22mm, #e05656 22mm, #e05656 calc(22mm + 1px), transparent calc(22mm + 1px)), repeating-linear-gradient(to bottom, transparent 0, transparent calc(9mm - 1px), #9fc2e6 calc(9mm - 1px), #9fc2e6 9mm)",
+  backgroundImage: "linear-gradient(to right, transparent 22mm, #e05656 22mm, #e05656 calc(22mm + 1px), transparent calc(22mm + 1px)), repeating-linear-gradient(to bottom, transparent 0, transparent 23mm, rgba(0,0,0,0.08) 23mm, rgba(0,0,0,0.08) 24mm)",
   backgroundPosition: "0 0, 0 24mm",
   lineHeight: "9mm",
 };
@@ -94,9 +94,31 @@ function compressImage(f: File, max = 1600): Promise<string> {
   });
 }
 
+function fileToDataUrl(f: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error("File read failed"));
+    r.readAsDataURL(f);
+  });
+}
+
 function readImages(files: FileList | null, cb: (urls: string[]) => void) {
   if (!files) return;
   Promise.all(Array.from(files).map((f) => compressImage(f))).then(cb);
+}
+
+function readQuestionDocuments(files: FileList | null, cb: (urls: string[]) => void) {
+  if (!files) return;
+  Promise.all(
+    Array.from(files).map(async (f) => {
+      const isPdf = f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf");
+      if (isPdf) return fileToDataUrl(f);
+      return compressImage(f);
+    }),
+  )
+    .then(cb)
+    .catch(() => cb([]));
 }
 
 function countQuestions(t: string) {
@@ -152,7 +174,7 @@ function MakerPage() {
 
   function persist(list: AssignmentAnswer[], status: "processing" | "completed", sid: string) {
     if (!subject) return;
-    upsertSaved({ id: sid, courseCode: subject.courseCode, title: subject.title, semester: subject.semester, session: currentAssignmentSession, style, status, answers: list, createdAt: getSaved(sid)?.createdAt ?? new Date().toISOString(), updatedAt: "" });
+    upsertSaved({ id: sid, courseCode: subject.courseCode, title: subject.title, semester: subject.semester, session: currentAssignmentSession, style, status, answers: list, createdAt: new Date().toISOString() });
   }
 
   useEffect(() => { try { const s = localStorage.getItem(KEY); if (s) setD({ ...emptyDetails, ...JSON.parse(s) }); } catch { /* ignore */ } }, []);
@@ -243,19 +265,19 @@ function MakerPage() {
           </label>
           <div className="grid gap-3 sm:grid-cols-2 text-sm">
             <label>ID card photo (page 2)<input type="file" accept="image/*" className="mt-1 block" onChange={(e) => readImages(e.target.files, setIdCard)} /></label>
-            <label>Question paper photos (AI pura padh lega)<input type="file" accept="image/*" multiple className="mt-1 block" onChange={(e) => readImages(e.target.files, async (urls) => {
+            <label>Question paper files (image/PDF) <input type="file" accept="image/*,.pdf" multiple className="mt-1 block" onChange={(e) => readQuestionDocuments(e.target.files, async (urls) => {
               setQpImgs(urls);
               if (!urls.length) return;
               setReading(true);
               setQText("");
-              try { const r = await readImgs({ data: { images: urls.slice(0, 6) } }); setQText(r.text); toast.success(`फ़ोटो से कुल ${countQuestions(r.text) || "सभी"} सवाल पढ़े गए`); }
-              catch (err) { toast.error(err instanceof Error ? err.message : "Photo read nahi hui"); }
+              try { const r = await readImgs({ data: { images: urls.slice(0, 6) } }); setQText(r.text); toast.success(`फ़ोटो/PDF से कुल ${countQuestions(r.text) || "सभी"} सवाल पढ़े गए`); }
+              catch (err) { toast.error(err instanceof Error ? err.message : "Question paper read nahi hui"); }
               finally { setReading(false); }
-            })} />{reading && <span className="mt-1 flex items-center gap-1 text-primary"><Loader2 className="h-3 w-3 animate-spin" /> Photo padhi ja rahi hai…</span>}</label>
+            })} />{reading && <span className="mt-1 flex items-center gap-1 text-primary"><Loader2 className="h-3 w-3 animate-spin" /> Photo/PDF padh rahe hain…</span>}</label>
           </div>
           {qpImgs.length > 0 && !reading && qText.trim() && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-              <p className="font-semibold text-primary">✓ फ़ोटो से कुल {countQuestions(qText) || "सभी"} सवाल पढ़े गए — सिर्फ़ इन्हीं का answer लिखा जाएगा</p>
+              <p className="font-semibold text-primary">✓ फ़ोटो/PDF से कुल {countQuestions(qText) || "सभी"} सवाल पढ़े गए — sirf inhe check/edit karke create karo.</p>
               <p className="mt-1 text-xs text-muted-foreground">Upar box me check/edit kar sakte ho.</p>
             </div>
           )}
@@ -269,14 +291,14 @@ function MakerPage() {
               <p className="text-xs text-muted-foreground">Ye sahi hain? Approve karne ke baad hi likhna shuru hoga.</p>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={approveOfficial}><Check className="h-4 w-4" /> Haan, inhe solve karo</Button>
-                <Button size="sm" variant="outline" onClick={() => { setQText(official.questions.map((q) => `Q${q.qno}. ${q.question} (${q.marks} marks)`).join("\n\n")); setOfficial(null); }}><Pencil className="h-4 w-4" /> Pehle edit karunga</Button>
+                <Button size="sm" variant="outline" onClick={() => { setQText(official.questions.map((q) => `Q${q.qno}. ${q.question} (${q.marks} marks)`).join("\n\n")); setOfficial(null); }}><Sparkles className="h-4 w-4" /> Manual text use karo</Button>
               </div>
             </div>
           )}
           {official && !official.found && (
             <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-1">
               <p className="font-semibold text-destructive">Is session ({currentAssignmentSession}) ka original assignment paper abhi IGNOU website par nahi mila.</p>
-              <p className="text-xs text-muted-foreground">Koi bhi sawaal khud se nahi banaya gaya. Apne LMS / IGNOU portal se paper download karke uski photo upar daalo ya questions box me paste karo.</p>
+              <p className="text-xs text-muted-foreground">Koi bhi sawaal khud se nahi banaya gaya. Apne LMS / IGNOU portal se paper download karke uski photo ya PDF upar daalo ya questions box me paste karo.</p>
               <div className="flex flex-wrap gap-3 text-xs">
                 <a className="underline" href="https://webservices.ignou.ac.in/assignments/" target="_blank" rel="noreferrer">IGNOU Assignment Portal</a>
                 <a className="underline" href="https://lms.ignou.ac.in/" target="_blank" rel="noreferrer">IGNOU LMS login</a>
@@ -284,19 +306,22 @@ function MakerPage() {
             </div>
           )}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => run()} disabled={loading || reading || fetching}>{fetching ? <><Loader2 className="h-4 w-4 animate-spin" /> Original paper dhoonda ja raha hai…</> : null}{fetching ? null : loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Likha ja raha hai…</> : <><Sparkles className="h-4 w-4" /> Assignment solve karo</>}</Button>
+            <Button onClick={() => run()} disabled={loading || reading || fetching}>{fetching ? <><Loader2 className="h-4 w-4 animate-spin" /> Original paper dhoonda ja raha hai…</> : null}{fetching ? "" : "Generate Assignment"}</Button>
             {answers && <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" /> Download PDF</Button>}
             {answers && !loading && <Button variant="outline" onClick={() => { if (editing && savedId) { persist(answers, "completed", savedId); toast.success("Save ho gaya"); } setEditing(!editing); }}>
-              {editing ? <><Check className="h-4 w-4" /> Save edits</> : <><Pencil className="h-4 w-4" /> Edit answers</>}</Button>}
+              {editing ? <><Check className="h-4 w-4" /> Save edits</> : <><Pencil className="h-4 w-4" /> Edit answers</>}
+            </Button>}
           </div>
           <div className="text-sm">
             <span className="text-muted-foreground">Handwriting style: </span>
             {(Object.keys(STYLES) as HandStyle[]).map((k) => (
-              <button key={k} onClick={() => setStyle(k)} className={`mr-2 mt-1 rounded-full border px-3 py-1 ${style === k ? "border-primary bg-primary/10" : "border-border"}`} style={{ fontFamily: STYLES[k].font }}>{STYLES[k].label}</button>
+              <button key={k} onClick={() => setStyle(k)} className={`mr-2 mt-1 rounded-full border px-3 py-1 ${style === k ? "border-primary bg-primary/10" : "border-border"}`} style={{ fontFamily: STYLES[k].font }}>
+                {STYLES[k].label}
+              </button>
             ))}
           </div>
           {progress && <p className="text-sm font-medium text-primary">{progress} — page band mat karo, har question save hota ja raha hai.</p>}
-          <p className="text-xs text-muted-foreground">"Download PDF" me print window khulega — Destination me "Save as PDF" chuno. Note: IGNOU apni handwriting maangta hai — is PDF ko dekhkar khud likhna sabse safe hai. AI answers ek baar check zaroor karo.</p>
+          <p className="text-xs text-muted-foreground">"Download PDF" me print window khulega — Destination me "Save as PDF" chuno. Note: IGNOU apni handwriting maangta hai — is PDF ko dekhkar final answer copy karke apni copy me fill karna.</p>
         </div>
 
         <SavedAssignments />
@@ -322,8 +347,11 @@ function MakerPage() {
                   <p style={{ textAlign: "center", fontSize: 18, marginTop: 8 }}>Session: {currentAssignmentSession}</p>
                   <table style={{ width: "100%", marginTop: 36, fontSize: 17, borderCollapse: "collapse" }}>
                     <tbody>
-                      {[["Name", d.name], ["Enrolment No.", d.enrolment], ["Programme", d.programme], ["Course Code", subject.courseCode], ["Course Title", subject.title], ["Semester", String(subject.semester)], ["Study Centre", d.studyCentre], ["Regional Centre", d.regionalCentre], ["Mobile", d.mobile], ["Email", d.email], ["Address", d.address], ["Date of Submission", today]].map(([k, v]) => (
-                        <tr key={k}><td style={{ padding: "8px 4px", fontWeight: 700, width: "40%", borderBottom: "1px solid #999" }}>{k}</td><td style={{ padding: "8px 4px", borderBottom: "1px solid #999" }}>{v}</td></tr>
+                      {[ ["Name", d.name], ["Enrolment No.", d.enrolment], ["Programme", d.programme], ["Course Code", subject.courseCode], ["Course Title", subject.title], ["Semester", String(subject.semester)], ["Study Centre", d.studyCentre], ["Regional Centre", d.regionalCentre], ["Mobile", d.mobile], ["Email", d.email], ["Address", d.address] ].map(([k, v], idx) => (
+                        <tr key={idx}>
+                          <td style={{ padding: "8px 4px", fontWeight: 700, width: "40%", borderBottom: "1px solid #999" }}>{k}</td>
+                          <td style={{ padding: "8px 4px", borderBottom: "1px solid #999" }}>{v || "—"}</td>
+                        </tr>
                       ))}
                     </tbody>
                   </table>
@@ -340,7 +368,11 @@ function MakerPage() {
               )}
               {qpImgs.map((src, i) => (
                 <div key={i} className="a4" style={{ background: "#fff", padding: "8mm" }}>
-                  <img src={src} alt={`Question paper page ${i + 1}`} style={{ width: "100%", maxHeight: "280mm", objectFit: "contain" }} />
+                  {src.startsWith("data:application/pdf") ? (
+                    <iframe src={src} title={`Question paper PDF ${i + 1}`} style={{ width: "100%", height: "280mm", border: "1px solid #d1d5db" }} />
+                  ) : (
+                    <img src={src} alt={`Question paper page ${i + 1}`} style={{ width: "100%", maxHeight: "280mm", objectFit: "contain" }} />
+                  )}
                 </div>
               ))}
               {answers.map((a) => {
