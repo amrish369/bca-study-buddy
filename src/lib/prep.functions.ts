@@ -99,7 +99,7 @@ export const getSubjectAnalysis = createServerFn({ method: "POST" })
     const r = await callAI(
       `Analyse IGNOU term-end exam question papers (2015-2025) for ${data.courseCode} ${data.title}.
 Units: ${data.lessons.join("; ") || "use the official syllabus"}.
-Return 8-12 most repeated topics sorted by probability of appearing in the next exam. For each: unit name, approximate times asked in last 10 years, list of years, typical marks, probability 0-100, and 2-3 most expected exam questions exactly as IGNOU style.`,
+Return 8-12 most repeated topics sorted by probability of appearing in the next exam. For each: unit name, approximate times asked in last 10 years, list of years, typical marks, probability 0-10 and likely expected questions.`,
       "subject_analysis",
       {
         type: "object",
@@ -150,7 +150,7 @@ export const generateQuiz = createServerFn({ method: "POST" })
     const r = await callAI(
       `Create ${data.count} high-quality MCQs for IGNOU ${data.courseCode} ${data.title}${
         data.focus ? `, focused on: ${data.focus}` : " covering the most repeated exam topics"
-      }. Each has exactly 4 options, the correct answerIndex (0-3), a short explanation in simple Hindi+English (Hinglish), and the topic name. Mix concept, numerical and output-based questions where relevant.`,
+      }. Each has exactly 4 options, the correct answerIndex (0-3), a short explanation in simple Hindi+English (Hinglish), and the topic name. Mix concept, numerical and output-based questions when relevant.`,
       "make_quiz",
       {
         type: "object",
@@ -196,7 +196,7 @@ export const getImportantQA = createServerFn({ method: "POST" })
     const r = await callAI(
       `For IGNOU ${data.courseCode} ${data.title}, analyse term-end exam papers of the last 15 years (2011-2025, June & December sessions).
 Units: ${data.lessons.join("; ") || "use the official syllabus"}.
-Return 12 most important repeated questions sorted by probability of appearing in the upcoming exam. For each: exact IGNOU-style question, unit, marks, sessions asked (like "Jun 2019", "Dec 2022"), timesAsked, probability 0-100, an exam-ready model answer in Hinglish (Hindi in Roman script mixed with English technical terms; use definition, key points as "- " bullets, code/syntax if relevant; 120-250 words), and a short scoring tip.`,
+Return 12 most important repeated questions sorted by probability of appearing in the upcoming exam. For each: exact IGNOU-style question, unit, marks, sessions asked (like "Jun 2019", "Dec 2022"), timesAsked, probability, answer, and examTip.`,
       "important_qa",
       {
         type: "object",
@@ -241,8 +241,8 @@ export const solveAssignment = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const r = await callAI(
       `Solve the IGNOU BCA assignment for ${data.courseCode} ${data.title}, session ${data.session}.
-${data.questionsText.trim() ? `Assignment questions given by student:\n${data.questionsText}` : "Questions not provided: write the typical official IGNOU assignment for this course (usually 4-8 questions, total 100 marks)."}
-For every question give the question number, full question text, marks, and a complete exam-quality answer in simple English that a student can copy by hand. Length must suit the marks (~40 words per mark, max 600 words). Use headings, "- " bullet points, steps, formulas, and code where relevant. Plain text only, no markdown symbols like ** or #.${data.instructions?.trim() ? `\nIMPORTANT extra instructions from the student (follow these over the defaults above): ${data.instructions}` : ""}`,
+${data.questionsText.trim() ? `Assignment questions given by student:\n${data.questionsText}` : "Questions not provided: write the typical official IGNOU assignment for this course (usually 4-8 questions)."}
+For every question give the question number, full question text, marks, and a complete exam-quality answer in simple English that a student can copy by hand. Length must suit the marks (~40 words for 2 marks, ~150-250 for 10 marks).`,
       "assignment_solution",
       {
         type: "object",
@@ -268,7 +268,7 @@ export const listAssignmentQuestions = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const r = await callAI(
-      `${data.questionsText.trim() ? `Split ONLY these given IGNOU assignment questions of ${data.courseCode} ${data.title} into a clean list. Keep the exact wording, sub-parts and marks. Do NOT add, remove, invent or replace any question. If marks are missing, distribute 100 marks sensibly:\n${data.questionsText}` : `Write the typical official IGNOU assignment questions for ${data.courseCode} ${data.title}, session ${data.session} (4-8 questions, total 100 marks).`}
+      `${data.questionsText.trim() ? `Split ONLY these given IGNOU assignment questions of ${data.courseCode} ${data.title} into a clean list. Keep the exact wording, sub-parts and marks. Do NOT answer them.\n${data.questionsText}` : "No questions were provided. Return an empty list."}
 Return only question number, full question text and marks. Do not answer.`,
       "assignment_questions",
       {
@@ -289,23 +289,26 @@ export const solveAssignmentQuestion = createServerFn({ method: "POST" })
     const r = await callAI(
       `Write a complete IGNOU BCA assignment answer for ${data.courseCode} ${data.title}.
 Question (${data.marks} marks): ${data.question}
-Write about ${words} words in simple English, the way a good student writes by hand: short Introduction, clear headings on their own line, "- " bullet points, step-by-step working for maths, full code with comments for programs, a small text diagram/table if useful, and a short Conclusion. Put every heading, bullet, step and code line on its own new line using \\n line breaks, with a blank line between sections. Plain text only, no markdown symbols like ** or #.${data.instructions?.trim() ? `\nIMPORTANT extra instructions from the student (follow these over the defaults): ${data.instructions}` : ""}`,
+Write about ${words} words in simple English, the way a good student writes by hand: short Introduction, clear headings on their own line, "- " bullet points, step-by-step working for maths, full explanations but concise. Keep it neat and exam-oriented. ${data.instructions ? `Extra instruction: ${data.instructions}` : ""}`,
       "assignment_answer",
       { type: "object", properties: { answer: { type: "string" } }, required: ["answer"] },
     );
     return { answer: String(r.answer ?? "").replace(/\s+-\s(?=[A-Z0-9])/g, "\n- ").replace(/\s*(Introduction|Conclusion|Definition)\s*:?\s+/g, "\n\n$1:\n").trim() };
   });
 
-// Reads uploaded question-paper photos with Gemini vision and returns the full text.
+// Reads uploaded question-paper photos or PDFs with Gemini vision and returns the full text.
 export const readQuestionImages = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ images: z.array(z.string().max(8_000_000)).min(1).max(6) }).parse(d))
   .handler(async ({ data }) => {
     const key = process.env["GEMINI_API_KEY"];
     if (!key) throw new Error("Gemini key missing");
-    const parts: any[] = [{ text: "These are photos of an IGNOU assignment/question paper. Read EVERYTHING and transcribe all questions exactly, in order, with question numbers, sub-parts (a), (b) and marks. Include course code and instructions if visible. Plain text only." }];
+    const parts: any[] = [{ text: "These are photos or PDFs of an IGNOU assignment/question paper. Read EVERYTHING and transcribe all questions exactly, in order, with question numbers, sub-parts (a), (b), etc. Preserve formatting as much as possible. If there are multiple pages, merge all into one clean text flow. If a page is blank, ignore it." }];
     for (const url of data.images) {
       const m = /^data:([^;]+);base64,(.+)$/.exec(url);
-      if (m) parts.push({ inline_data: { mime_type: m[1], data: m[2] } });
+      if (m) {
+        const mimeType = m[1];
+        parts.push({ inline_data: { mime_type: mimeType, data: m[2] } });
+      }
     }
     let lastErr = "";
     for (const model of ["gemini-3-flash-preview", "gemini-flash-lite-latest"]) {
@@ -314,13 +317,13 @@ export const readQuestionImages = createServerFn({ method: "POST" })
         headers: { "Content-Type": "application/json", "x-goog-api-key": key },
         body: JSON.stringify({ contents: [{ role: "user", parts }] }),
       });
-      if (!res.ok) { lastErr = `Image read failed (${res.status})`; continue; }
+      if (!res.ok) { lastErr = `Image/PDF read failed (${res.status})`; continue; }
       const json: any = await res.json();
       const text = (json?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("").trim();
       if (text) return { text };
-      lastErr = "Image se text nahi mila";
+      lastErr = "Image/PDF se text nahi mila";
     }
-    throw new Error(lastErr || "Image read failed");
+    throw new Error(lastErr || "Image/PDF read failed");
   });
 
 // Downloads the ORIGINAL IGNOU question paper PDF and reads its real questions (no invented questions).
@@ -351,7 +354,7 @@ export const getPaperQuestions = createServerFn({ method: "POST" })
           body: JSON.stringify({
             contents: [{ role: "user", parts: [
               { inline_data: { mime_type: "application/pdf", data: b64 } },
-              { text: "This is an original IGNOU term-end exam question paper. Transcribe EVERY question exactly as printed, in order, one item per question or sub-part (e.g. 1(a), 1(b), 2). Keep exact wording, include marks for each. Write maths in plain text (no LaTeX). Do NOT add, skip, invent or answer anything. If the paper is bilingual, use only the English version." },
+              { text: "This is an original IGNOU term-end exam question paper. Transcribe EVERY question exactly as printed, in order, one item per question or sub-part (e.g. 1(a), 1(b), 2). Keep all numbers and marks. Return JSON only." },
             ] }],
             generationConfig: { responseMimeType: "application/json", responseJsonSchema: strict(schema) },
           }),
@@ -386,7 +389,7 @@ export const getAssignmentPaper = createServerFn({ method: "POST" })
     const key = process.env["GEMINI_API_KEY"];
     if (!key) throw new Error("Gemini key missing");
     const schema = { type: "object", properties: { questions: { type: "array", items: { type: "object", properties: { qno: { type: "string" }, question: { type: "string" }, marks: { type: "number" } }, required: ["qno", "question", "marks"] } } }, required: ["questions"] };
-    const prompt = `This is the original IGNOU assignment PDF which may contain several courses. Transcribe EVERY question of course ${data.courseCode} only, exactly as printed, in order, one item per question or sub-part (e.g. 1(a), 1(b), 2). Keep exact wording and marks. Plain-text maths, no LaTeX. Skip cover/instruction pages. Do NOT add, skip, invent or answer anything. If bilingual, use English only.`;
+    const prompt = `This is the original IGNOU assignment PDF which may contain several courses. Transcribe EVERY question of course ${data.courseCode} only, exactly as printed, in order, one item per question or sub-part (a), (b). Keep all numbers and marks. Return JSON only.`;
     let lastErr = "";
     for (let round = 0; round < 2; round++) {
       for (const model of ["gemini-3-flash-preview", "gemini-flash-lite-latest"]) {
